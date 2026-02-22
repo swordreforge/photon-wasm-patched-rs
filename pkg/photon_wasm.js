@@ -19,6 +19,15 @@ export class ImageProcessor {
         wasm.__wbg_imageprocessor_free(ptr, 0);
     }
     /**
+     * @param {number} brightness
+     * @param {number} contrast
+     * @param {number} saturation
+     * @param {number} hue
+     */
+    apply_all_adjustments(brightness, contrast, saturation, hue) {
+        wasm.imageprocessor_apply_all_adjustments(this.__wbg_ptr, brightness, contrast, saturation, hue);
+    }
+    /**
      * @param {number} level
      */
     apply_brightness(level) {

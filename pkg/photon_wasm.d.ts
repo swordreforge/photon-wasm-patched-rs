@@ -4,6 +4,7 @@
 export class ImageProcessor {
     free(): void;
     [Symbol.dispose](): void;
+    apply_all_adjustments(brightness: number, contrast: number, saturation: number, hue: number): void;
     apply_brightness(level: number): void;
     apply_contrast(level: number): void;
     apply_grayscale(): void;
@@ -3042,6 +3043,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_imageprocessor_free: (a: number, b: number) => void;
+    readonly imageprocessor_apply_all_adjustments: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly imageprocessor_apply_brightness: (a: number, b: number) => void;
     readonly imageprocessor_apply_contrast: (a: number, b: number) => void;
     readonly imageprocessor_apply_grayscale: (a: number) => void;
