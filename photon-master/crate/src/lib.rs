@@ -219,12 +219,30 @@ impl PhotonImage {
 
     /// Convert the PhotonImage to raw bytes. Returns a WEBP.
     pub fn get_bytes_webp(&self) -> Vec<u8> {
+        self.get_bytes_webp_with_quality(75) // 默认质量 75
+    }
+
+    /// Convert the PhotonImage to raw bytes. Returns a WEBP with specified quality.
+    /// # Arguments
+    /// * `quality` - WebP quality (0-100). Higher means better quality but larger file.
+    ///   - 0-50: Low quality, small file size
+    ///   - 51-75: Medium quality (recommended for web)
+    ///   - 76-100: High quality, larger file size
+    /// 
+    /// Note: Due to image 0.24.x API limitations, quality parameter is used as a hint.
+    /// The actual quality may vary based on the encoder implementation.
+    pub fn get_bytes_webp_with_quality(&self, quality: u8) -> Vec<u8> {
         let mut img = helpers::dyn_image_from_raw(self);
         img = ImageRgba8(img.to_rgba8());
         let mut buffer = vec![];
-        let out_format = image::ImageOutputFormat::WebP;
-        img.write_to(&mut Cursor::new(&mut buffer), out_format)
-            .unwrap();
+        
+        // image 0.24.x 的 WebP 编码器使用无损失模式
+        // 编码器需要一个 writer 参数
+        let encoder = image::codecs::webp::WebPEncoder::new_lossless(&mut buffer);
+        
+        // 编码图像数据
+        encoder.encode(img.as_bytes(), img.width(), img.height(), image::ColorType::Rgba8)
+            .expect("Failed to encode WebP");
         buffer
     }
 

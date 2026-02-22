@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
-use photon_rs::{PhotonImage, filters, native, monochrome, transform, effects, colour_spaces};
-use base64::{Engine as _, engine::general_purpose};
+use photon_rs::{PhotonImage, filters, native, monochrome, transform, effects, colour_spaces, channels, text};
+use base64::{Engine, engine::general_purpose};
 
 #[wasm_bindgen]
 pub struct ImageProcessor {
@@ -55,17 +55,131 @@ impl ImageProcessor {
         self.image.get_bytes()
     }
 
+    // 获取估算的文件大小（字节）
+    pub fn get_estimated_filesize(&self) -> u64 {
+        self.image.get_estimated_filesize()
+    }
+
     // 图像格式转换
     pub fn to_jpeg(&mut self, quality: u8) -> String {
-        self.image.get_base64()
+        base64::engine::general_purpose::STANDARD.encode(&self.image.get_bytes_jpeg(quality))
     }
 
     pub fn to_png(&mut self) -> String {
-        self.image.get_base64()
+        base64::engine::general_purpose::STANDARD.encode(&self.image.get_bytes())
     }
 
-    pub fn to_webp(&mut self, _quality: u8) -> String {
-        self.image.get_base64()
+    pub fn to_webp(&mut self, quality: u8) -> String {
+        base64::engine::general_purpose::STANDARD.encode(&self.image.get_bytes_webp_with_quality(quality))
+    }
+
+    // 文本绘制功能
+    pub fn draw_text(&mut self, text: &str, x: i32, y: i32, font_size: f32) {
+        text::draw_text(&mut self.image, text, x, y, font_size);
+    }
+
+    /// 绘制文本，支持选择字体类型
+    /// font_type: 0-14, 对应不同的字体
+    pub fn draw_text_with_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, font_type: u8) {
+        let ft = match font_type {
+            1 => text::FontType::RobotoBlack,
+            2 => text::FontType::AlibabaThin,
+            3 => text::FontType::AlibabaRegular,
+            4 => text::FontType::AlibabaRegularL3,
+            5 => text::FontType::AlibabaMedium,
+            6 => text::FontType::AlibabaSemiBold,
+            7 => text::FontType::AlibabaBold,
+            8 => text::FontType::AlibabaExtraBold,
+            9 => text::FontType::AlibabaHeavy,
+            10 => text::FontType::AlibabaBlack,
+            11 => text::FontType::FreeSerif,
+            12 => text::FontType::HongLeiXiaoZhiTiao,
+            13 => text::FontType::NanXiXinYuanTi,
+            14 => text::FontType::MaoKenYingBiKaiShu,
+            _ => text::FontType::RobotoRegular,
+        };
+        text::draw_text_with_font(&mut self.image, text, x, y, font_size, ft);
+    }
+
+    pub fn draw_text_with_shadow(&mut self, text: &str, x: i32, y: i32, font_size: f32) {
+        text::draw_text_with_border(&mut self.image, text, x, y, font_size);
+    }
+
+    /// 绘制带阴影的文本，支持选择字体类型
+    /// font_type: 0-14, 对应不同的字体
+    pub fn draw_text_with_shadow_and_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, font_type: u8) {
+        let ft = match font_type {
+            1 => text::FontType::RobotoBlack,
+            2 => text::FontType::AlibabaThin,
+            3 => text::FontType::AlibabaRegular,
+            4 => text::FontType::AlibabaRegularL3,
+            5 => text::FontType::AlibabaMedium,
+            6 => text::FontType::AlibabaSemiBold,
+            7 => text::FontType::AlibabaBold,
+            8 => text::FontType::AlibabaExtraBold,
+            9 => text::FontType::AlibabaHeavy,
+            10 => text::FontType::AlibabaBlack,
+            11 => text::FontType::FreeSerif,
+            12 => text::FontType::HongLeiXiaoZhiTiao,
+            13 => text::FontType::NanXiXinYuanTi,
+            14 => text::FontType::MaoKenYingBiKaiShu,
+            _ => text::FontType::RobotoRegular,
+        };
+        text::draw_text_with_border_with_font(&mut self.image, text, x, y, font_size, ft);
+    }
+
+    pub fn draw_text_with_color(&mut self, text: &str, x: i32, y: i32, font_size: f32, r: u8, g: u8, b: u8) {
+        text::draw_text_with_color(&mut self.image, text, x, y, font_size, r, g, b);
+    }
+
+    /// 绘制带颜色的文本，支持选择字体类型
+    /// font_type: 0-14, 对应不同的字体
+    pub fn draw_text_with_color_and_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, r: u8, g: u8, b: u8, font_type: u8) {
+        let ft = match font_type {
+            1 => text::FontType::RobotoBlack,
+            2 => text::FontType::AlibabaThin,
+            3 => text::FontType::AlibabaRegular,
+            4 => text::FontType::AlibabaRegularL3,
+            5 => text::FontType::AlibabaMedium,
+            6 => text::FontType::AlibabaSemiBold,
+            7 => text::FontType::AlibabaBold,
+            8 => text::FontType::AlibabaExtraBold,
+            9 => text::FontType::AlibabaHeavy,
+            10 => text::FontType::AlibabaBlack,
+            11 => text::FontType::FreeSerif,
+            12 => text::FontType::HongLeiXiaoZhiTiao,
+            13 => text::FontType::NanXiXinYuanTi,
+            14 => text::FontType::MaoKenYingBiKaiShu,
+            _ => text::FontType::RobotoRegular,
+        };
+        text::draw_text_with_color_and_font(&mut self.image, text, x, y, font_size, r, g, b, ft);
+    }
+
+    pub fn draw_text_with_shadow_and_color(&mut self, text: &str, x: i32, y: i32, font_size: f32, r: u8, g: u8, b: u8) {
+        text::draw_text_with_border_and_color(&mut self.image, text, x, y, font_size, r, g, b);
+    }
+
+    /// 绘制带阴影和颜色的文本，支持选择字体类型
+    /// font_type: 0-14, 对应不同的字体
+    pub fn draw_text_with_shadow_and_color_and_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, r: u8, g: u8, b: u8, font_type: u8) {
+        let ft = match font_type {
+            1 => text::FontType::RobotoBlack,
+            2 => text::FontType::AlibabaThin,
+            3 => text::FontType::AlibabaRegular,
+            4 => text::FontType::AlibabaRegularL3,
+            5 => text::FontType::AlibabaMedium,
+            6 => text::FontType::AlibabaSemiBold,
+            7 => text::FontType::AlibabaBold,
+            8 => text::FontType::AlibabaExtraBold,
+            9 => text::FontType::AlibabaHeavy,
+            10 => text::FontType::AlibabaBlack,
+            11 => text::FontType::FreeSerif,
+            12 => text::FontType::HongLeiXiaoZhiTiao,
+            13 => text::FontType::NanXiXinYuanTi,
+            14 => text::FontType::MaoKenYingBiKaiShu,
+            _ => text::FontType::RobotoRegular,
+        };
+        text::draw_text_with_border_and_color_and_font(&mut self.image, text, x, y, font_size, r, g, b, ft);
     }
 
     // 图像滤镜

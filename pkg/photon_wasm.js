@@ -1,5 +1,72 @@
 /* @ts-self-types="./photon_wasm.d.ts" */
 
+/**
+ * 字体类型枚举
+ * @enum {0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14}
+ */
+export const FontType = Object.freeze({
+    /**
+     * Roboto 常规字体（默认）
+     */
+    RobotoRegular: 0, "0": "RobotoRegular",
+    /**
+     * Roboto 粗体字体
+     */
+    RobotoBlack: 1, "1": "RobotoBlack",
+    /**
+     * 阿里普惠体 细体
+     */
+    AlibabaThin: 2, "2": "AlibabaThin",
+    /**
+     * 阿里普惠体 常规
+     */
+    AlibabaRegular: 3, "3": "AlibabaRegular",
+    /**
+     * 阿里普惠体 常规 L3
+     */
+    AlibabaRegularL3: 4, "4": "AlibabaRegularL3",
+    /**
+     * 阿里普惠体 中等
+     */
+    AlibabaMedium: 5, "5": "AlibabaMedium",
+    /**
+     * 阿里普惠体 半粗
+     */
+    AlibabaSemiBold: 6, "6": "AlibabaSemiBold",
+    /**
+     * 阿里普惠体 粗体
+     */
+    AlibabaBold: 7, "7": "AlibabaBold",
+    /**
+     * 阿里普惠体 特粗
+     */
+    AlibabaExtraBold: 8, "8": "AlibabaExtraBold",
+    /**
+     * 阿里普惠体 重体
+     */
+    AlibabaHeavy: 9, "9": "AlibabaHeavy",
+    /**
+     * 阿里普惠体 黑体
+     */
+    AlibabaBlack: 10, "10": "AlibabaBlack",
+    /**
+     * FreeSerif 衬线字体
+     */
+    FreeSerif: 11, "11": "FreeSerif",
+    /**
+     * 鸿雷小纸条青春体
+     */
+    HongLeiXiaoZhiTiao: 12, "12": "HongLeiXiaoZhiTiao",
+    /**
+     * 南西新圆体 简繁
+     */
+    NanXiXinYuanTi: 13, "13": "NanXiXinYuanTi",
+    /**
+     * 毛楷笔书体
+     */
+    MaoKenYingBiKaiShu: 14, "14": "MaoKenYingBiKaiShu",
+});
+
 export class ImageProcessor {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -29,11 +96,12 @@ export class ImageProcessor {
      * @param {number} gamma_green
      * @param {number} gamma_blue
      * @param {number} sharpen_strength
+     * @param {number} noise_reduction_strength
      */
-    apply_all_adjustments(brightness, contrast, saturation, hue, lightness, lightness_color_space, gamma_red, gamma_green, gamma_blue, sharpen_strength) {
+    apply_all_adjustments(brightness, contrast, saturation, hue, lightness, lightness_color_space, gamma_red, gamma_green, gamma_blue, sharpen_strength, noise_reduction_strength) {
         const ptr0 = passStringToWasm0(lightness_color_space, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        wasm.imageprocessor_apply_all_adjustments(this.__wbg_ptr, brightness, contrast, saturation, hue, lightness, ptr0, len0, gamma_red, gamma_green, gamma_blue, sharpen_strength);
+        wasm.imageprocessor_apply_all_adjustments(this.__wbg_ptr, brightness, contrast, saturation, hue, lightness, ptr0, len0, gamma_red, gamma_green, gamma_blue, sharpen_strength, noise_reduction_strength);
     }
     /**
      * @param {number} level
@@ -97,6 +165,12 @@ export class ImageProcessor {
         wasm.imageprocessor_apply_lightness(this.__wbg_ptr, level, ptr0, len0);
     }
     /**
+     * @param {number} strength
+     */
+    apply_noise_reduction(strength) {
+        wasm.imageprocessor_apply_noise_reduction(this.__wbg_ptr, strength);
+    }
+    /**
      * @param {number} radius
      * @param {number} intensity
      */
@@ -150,6 +224,118 @@ export class ImageProcessor {
     crop(x1, y1, x2, y2) {
         wasm.imageprocessor_crop(this.__wbg_ptr, x1, y1, x2, y2);
     }
+    /**
+     * @param {string} text
+     * @param {number} x
+     * @param {number} y
+     * @param {number} font_size
+     */
+    draw_text(text, x, y, font_size) {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_draw_text(this.__wbg_ptr, ptr0, len0, x, y, font_size);
+    }
+    /**
+     * @param {string} text
+     * @param {number} x
+     * @param {number} y
+     * @param {number} font_size
+     * @param {number} r
+     * @param {number} g
+     * @param {number} b
+     */
+    draw_text_with_color(text, x, y, font_size, r, g, b) {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_draw_text_with_color(this.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b);
+    }
+    /**
+     * 绘制带颜色的文本，支持选择字体类型
+     * font_type: 0-14, 对应不同的字体
+     * @param {string} text
+     * @param {number} x
+     * @param {number} y
+     * @param {number} font_size
+     * @param {number} r
+     * @param {number} g
+     * @param {number} b
+     * @param {number} font_type
+     */
+    draw_text_with_color_and_font(text, x, y, font_size, r, g, b, font_type) {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_draw_text_with_color_and_font(this.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b, font_type);
+    }
+    /**
+     * 绘制文本，支持选择字体类型
+     * font_type: 0-14, 对应不同的字体
+     * @param {string} text
+     * @param {number} x
+     * @param {number} y
+     * @param {number} font_size
+     * @param {number} font_type
+     */
+    draw_text_with_font(text, x, y, font_size, font_type) {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_draw_text_with_font(this.__wbg_ptr, ptr0, len0, x, y, font_size, font_type);
+    }
+    /**
+     * @param {string} text
+     * @param {number} x
+     * @param {number} y
+     * @param {number} font_size
+     */
+    draw_text_with_shadow(text, x, y, font_size) {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_draw_text_with_shadow(this.__wbg_ptr, ptr0, len0, x, y, font_size);
+    }
+    /**
+     * @param {string} text
+     * @param {number} x
+     * @param {number} y
+     * @param {number} font_size
+     * @param {number} r
+     * @param {number} g
+     * @param {number} b
+     */
+    draw_text_with_shadow_and_color(text, x, y, font_size, r, g, b) {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_draw_text_with_shadow_and_color(this.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b);
+    }
+    /**
+     * 绘制带阴影和颜色的文本，支持选择字体类型
+     * font_type: 0-14, 对应不同的字体
+     * @param {string} text
+     * @param {number} x
+     * @param {number} y
+     * @param {number} font_size
+     * @param {number} r
+     * @param {number} g
+     * @param {number} b
+     * @param {number} font_type
+     */
+    draw_text_with_shadow_and_color_and_font(text, x, y, font_size, r, g, b, font_type) {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_draw_text_with_shadow_and_color_and_font(this.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b, font_type);
+    }
+    /**
+     * 绘制带阴影的文本，支持选择字体类型
+     * font_type: 0-14, 对应不同的字体
+     * @param {string} text
+     * @param {number} x
+     * @param {number} y
+     * @param {number} font_size
+     * @param {number} font_type
+     */
+    draw_text_with_shadow_and_font(text, x, y, font_size, font_type) {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_draw_text_with_shadow_and_font(this.__wbg_ptr, ptr0, len0, x, y, font_size, font_type);
+    }
     flip_horizontal() {
         wasm.imageprocessor_flip_horizontal(this.__wbg_ptr);
     }
@@ -164,6 +350,13 @@ export class ImageProcessor {
         var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;
+    }
+    /**
+     * @returns {bigint}
+     */
+    get_estimated_filesize() {
+        const ret = wasm.imageprocessor_get_estimated_filesize(this.__wbg_ptr);
+        return BigInt.asUintN(64, ret);
     }
     /**
      * @returns {number}
@@ -268,14 +461,14 @@ export class ImageProcessor {
         }
     }
     /**
-     * @param {number} _quality
+     * @param {number} quality
      * @returns {string}
      */
-    to_webp(_quality) {
+    to_webp(quality) {
         let deferred1_0;
         let deferred1_1;
         try {
-            const ret = wasm.imageprocessor_to_webp(this.__wbg_ptr, _quality);
+            const ret = wasm.imageprocessor_to_webp(this.__wbg_ptr, quality);
             deferred1_0 = ret[0];
             deferred1_1 = ret[1];
             return getStringFromWasm0(ret[0], ret[1]);
@@ -351,6 +544,25 @@ export class PhotonImage {
      */
     get_bytes_webp() {
         const ret = wasm.photonimage_get_bytes_webp(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
+    }
+    /**
+     * Convert the PhotonImage to raw bytes. Returns a WEBP with specified quality.
+     * # Arguments
+     * * `quality` - WebP quality (0-100). Higher means better quality but larger file.
+     *   - 0-50: Low quality, small file size
+     *   - 51-75: Medium quality (recommended for web)
+     *   - 76-100: High quality, larger file size
+     *
+     * Note: Due to image 0.24.x API limitations, quality parameter is used as a hint.
+     * The actual quality may vary based on the encoder implementation.
+     * @param {number} quality
+     * @returns {Uint8Array}
+     */
+    get_bytes_webp_with_quality(quality) {
+        const ret = wasm.photonimage_get_bytes_webp_with_quality(this.__wbg_ptr, quality);
         var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;
@@ -661,6 +873,37 @@ export const SamplingFilter = Object.freeze({
 export function add_noise_rand(photon_image) {
     _assertClass(photon_image, PhotonImage);
     wasm.add_noise_rand(photon_image.__wbg_ptr);
+}
+
+/**
+ * Add randomized noise to an image with adjustable strength.
+ * This function adds Gaussian noise to each pixel by incrementing each channel by a randomized offset.
+ * The maximum offset is controlled by the strength parameter.
+ * **[WASM SUPPORT IS AVAILABLE]**
+ * # Arguments
+ * * `photon_image` - A PhotonImage.
+ * * `strength` - Noise strength. Range: 0.0 to 10.0.
+ *   - 0.0: No noise
+ *   - 1.0: Subtle noise (max offset 0-15)
+ *   - 5.0: Moderate noise (max offset 0-75)
+ *   - 10.0: Strong noise (max offset 0-150, equivalent to add_noise_rand)
+ *
+ * # Example
+ *
+ * ```no_run
+ * // For example, to add noise with strength 2.0:
+ * use photon_rs::native::open_image;
+ * use photon_rs::noise::add_noise_rand_with_strength;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * add_noise_rand_with_strength(&mut img, 2.0);
+ * ```
+ * @param {PhotonImage} photon_image
+ * @param {number} strength
+ */
+export function add_noise_rand_with_strength(photon_image, strength) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.add_noise_rand_with_strength(photon_image.__wbg_ptr, strength);
 }
 
 /**
@@ -1679,6 +1922,156 @@ export function draw_text_with_border(photon_img, text, x, y, font_size) {
     const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     wasm.draw_text_with_border(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size);
+}
+
+/**
+ * Add bordered-text to an image with custom color.
+ * The only font available as of now is Roboto.
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage.
+ * * `text` - Text string to be drawn to the image.
+ * * `x` - x-coordinate of where first letter's 1st pixel should be drawn.
+ * * `y` - y-coordinate of where first letter's 1st pixel should be drawn.
+ * * `font_size` - Font size in pixels of the text to be drawn.
+ * * `r` - Red channel (0-255).
+ * * `g` - Green channel (0-255).
+ * * `b` - Blue channel (0-255).
+ *
+ * # Example
+ *
+ * ```no_run
+ * // For example to draw red text with border at 10, 10:
+ * use photon_rs::native::open_image;
+ * use photon_rs::text::draw_text_with_border_and_color;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * draw_text_with_border_and_color(&mut img, "Hello!", 10_i32, 10_i32, 90_f32, 255u8, 0u8, 0u8);
+ * ```
+ * @param {PhotonImage} photon_img
+ * @param {string} text
+ * @param {number} x
+ * @param {number} y
+ * @param {number} font_size
+ * @param {number} r
+ * @param {number} g
+ * @param {number} b
+ */
+export function draw_text_with_border_and_color(photon_img, text, x, y, font_size, r, g, b) {
+    _assertClass(photon_img, PhotonImage);
+    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.draw_text_with_border_and_color(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b);
+}
+
+/**
+ * Add bordered-text to an image with custom color and specified font type.
+ * @param {PhotonImage} photon_img
+ * @param {string} text
+ * @param {number} x
+ * @param {number} y
+ * @param {number} font_size
+ * @param {number} r
+ * @param {number} g
+ * @param {number} b
+ * @param {FontType} font_type
+ */
+export function draw_text_with_border_and_color_and_font(photon_img, text, x, y, font_size, r, g, b, font_type) {
+    _assertClass(photon_img, PhotonImage);
+    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.draw_text_with_border_and_color_and_font(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b, font_type);
+}
+
+/**
+ * Add bordered-text to an image with specified font type.
+ * @param {PhotonImage} photon_img
+ * @param {string} text
+ * @param {number} x
+ * @param {number} y
+ * @param {number} font_size
+ * @param {FontType} font_type
+ */
+export function draw_text_with_border_with_font(photon_img, text, x, y, font_size, font_type) {
+    _assertClass(photon_img, PhotonImage);
+    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.draw_text_with_border_with_font(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, font_type);
+}
+
+/**
+ * Add text to an image with custom color.
+ * The only font available as of now is Roboto.
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage.
+ * * `text` - Text string to be drawn to the image.
+ * * `x` - x-coordinate of where first letter's 1st pixel should be drawn.
+ * * `y` - y-coordinate of where first letter's 1st pixel should be drawn.
+ * * `font_size` - Font size in pixels of the text to be drawn.
+ * * `r` - Red channel (0-255).
+ * * `g` - Green channel (0-255).
+ * * `b` - Blue channel (0-255).
+ *
+ * # Example
+ *
+ * ```no_run
+ * // For example to draw red text at 10, 10:
+ * use photon_rs::native::open_image;
+ * use photon_rs::text::draw_text_with_color;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * draw_text_with_color(&mut img, "Hello!", 10_i32, 10_i32, 90_f32, 255u8, 0u8, 0u8);
+ * ```
+ * @param {PhotonImage} photon_img
+ * @param {string} text
+ * @param {number} x
+ * @param {number} y
+ * @param {number} font_size
+ * @param {number} r
+ * @param {number} g
+ * @param {number} b
+ */
+export function draw_text_with_color(photon_img, text, x, y, font_size, r, g, b) {
+    _assertClass(photon_img, PhotonImage);
+    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.draw_text_with_color(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b);
+}
+
+/**
+ * Add text to an image with custom color and specified font type.
+ * @param {PhotonImage} photon_img
+ * @param {string} text
+ * @param {number} x
+ * @param {number} y
+ * @param {number} font_size
+ * @param {number} r
+ * @param {number} g
+ * @param {number} b
+ * @param {FontType} font_type
+ */
+export function draw_text_with_color_and_font(photon_img, text, x, y, font_size, r, g, b, font_type) {
+    _assertClass(photon_img, PhotonImage);
+    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.draw_text_with_color_and_font(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b, font_type);
+}
+
+/**
+ * Add text to an image with specified font type.
+ * @param {PhotonImage} photon_img
+ * @param {string} text
+ * @param {number} x
+ * @param {number} y
+ * @param {number} font_size
+ * @param {FontType} font_type
+ */
+export function draw_text_with_font(photon_img, text, x, y, font_size, font_type) {
+    _assertClass(photon_img, PhotonImage);
+    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.draw_text_with_font(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, font_type);
 }
 
 /**
@@ -2868,6 +3261,35 @@ export function neue(photon_image) {
 export function noise_reduction(photon_image) {
     _assertClass(photon_image, PhotonImage);
     wasm.noise_reduction(photon_image.__wbg_ptr);
+}
+
+/**
+ * Noise reduction with adjustable strength.
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage.
+ * * `strength` - Noise reduction strength. Range: 0.0 to 10.0.
+ *   - 0.0: No noise reduction
+ *   - 1.0: Standard noise reduction (equivalent to noise_reduction())
+ *   - >1.0: Stronger noise reduction (more smoothing)
+ *   - <1.0: Subtle noise reduction (preserves more detail)
+ *
+ * # Example
+ *
+ * ```no_run
+ * // For example, to apply noise reduction with strength 2.0:
+ * use photon_rs::conv::noise_reduction_with_strength;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * noise_reduction_with_strength(&mut img, 2.0);
+ * ```
+ * @param {PhotonImage} photon_image
+ * @param {number} strength
+ */
+export function noise_reduction_with_strength(photon_image, strength) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.noise_reduction_with_strength(photon_image.__wbg_ptr, strength);
 }
 
 /**
@@ -4405,6 +4827,10 @@ function __wbg_get_imports() {
             const ret = arg0.createElement(getStringFromWasm0(arg1, arg2));
             return ret;
         }, arguments); },
+        __wbg_crypto_b501cd47f5fc84cc: function(arg0) {
+            const ret = arg0.crypto;
+            return ret;
+        },
         __wbg_data_9d735c278043b856: function(arg0, arg1) {
             const ret = arg1.data;
             const ptr1 = passArray8ToWasm0(ret, wasm.__wbindgen_malloc);
@@ -4441,6 +4867,13 @@ function __wbg_get_imports() {
             const ret = arg0.getImageData(arg1, arg2, arg3, arg4);
             return ret;
         }, arguments); },
+        __wbg_getRandomValues_0ece34fb6273ba4a: function(arg0) {
+            const ret = arg0.getRandomValues;
+            return ret;
+        },
+        __wbg_getRandomValues_fc2c42282aa7250c: function(arg0, arg1) {
+            arg0.getRandomValues(arg1);
+        },
         __wbg_height_3991d9422ca14223: function(arg0) {
             const ret = arg0.height;
             return ret;
@@ -4487,12 +4920,20 @@ function __wbg_get_imports() {
             const ret = arg0.length;
             return ret;
         },
+        __wbg_msCrypto_56bad8adf1ceb3d9: function(arg0) {
+            const ret = arg0.msCrypto;
+            return ret;
+        },
         __wbg_new_227d7c05414eb861: function() {
             const ret = new Error();
             return ret;
         },
         __wbg_new_a0479da6258a0d71: function(arg0) {
             const ret = new Uint8Array(arg0);
+            return ret;
+        },
+        __wbg_new_with_length_9b57e4a9683723fa: function(arg0) {
+            const ret = new Uint8Array(arg0 >>> 0);
             return ret;
         },
         __wbg_new_with_u8_clamped_array_and_sh_d404c83358b4f8a7: function() { return handleError(function (arg0, arg1, arg2, arg3) {
@@ -4504,6 +4945,21 @@ function __wbg_get_imports() {
         },
         __wbg_putImageData_93c24c88613e11ba: function() { return handleError(function (arg0, arg1, arg2, arg3) {
             arg0.putImageData(arg1, arg2, arg3);
+        }, arguments); },
+        __wbg_randomFillSync_1afd9d46e5907320: function(arg0, arg1, arg2) {
+            arg0.randomFillSync(getArrayU8FromWasm0(arg1, arg2));
+        },
+        __wbg_random_625435d73260b19d: function() {
+            const ret = Math.random();
+            return ret;
+        },
+        __wbg_require_6e5b8fc0b04be67c: function(arg0, arg1, arg2) {
+            const ret = arg0.require(getStringFromWasm0(arg1, arg2));
+            return ret;
+        },
+        __wbg_self_d2194f493ba20573: function() { return handleError(function () {
+            const ret = self.self;
+            return ret;
         }, arguments); },
         __wbg_set_height_7dd5e784e99d750f: function(arg0, arg1) {
             arg0.height = arg1 >>> 0;
@@ -4529,6 +4985,10 @@ function __wbg_get_imports() {
             const ret = typeof global === 'undefined' ? null : global;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
         },
+        __wbg_static_accessor_MODULE_ef3aa2eb251158a5: function() {
+            const ret = module;
+            return ret;
+        },
         __wbg_static_accessor_SELF_e29eaf7c465526b1: function() {
             const ret = typeof self === 'undefined' ? null : self;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
@@ -4536,6 +4996,10 @@ function __wbg_get_imports() {
         __wbg_static_accessor_WINDOW_66e7ca3eef30585a: function() {
             const ret = typeof window === 'undefined' ? null : window;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
+        },
+        __wbg_subarray_f36da54ffa7114f5: function(arg0, arg1, arg2) {
+            const ret = arg0.subarray(arg1 >>> 0, arg2 >>> 0);
+            return ret;
         },
         __wbg_width_12d0b6a95084d00c: function(arg0) {
             const ret = arg0.width;

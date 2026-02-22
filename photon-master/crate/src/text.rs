@@ -13,6 +13,68 @@ use rusttype::{Font, Scale};
 #[cfg(feature = "enable_wasm")]
 use wasm_bindgen::prelude::*;
 
+/// 字体类型枚举
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FontType {
+    /// Roboto 常规字体（默认）
+    RobotoRegular = 0,
+    /// Roboto 粗体字体
+    RobotoBlack = 1,
+    /// 阿里普惠体 细体
+    AlibabaThin = 2,
+    /// 阿里普惠体 常规
+    AlibabaRegular = 3,
+    /// 阿里普惠体 常规 L3
+    AlibabaRegularL3 = 4,
+    /// 阿里普惠体 中等
+    AlibabaMedium = 5,
+    /// 阿里普惠体 半粗
+    AlibabaSemiBold = 6,
+    /// 阿里普惠体 粗体
+    AlibabaBold = 7,
+    /// 阿里普惠体 特粗
+    AlibabaExtraBold = 8,
+    /// 阿里普惠体 重体
+    AlibabaHeavy = 9,
+    /// 阿里普惠体 黑体
+    AlibabaBlack = 10,
+    /// FreeSerif 衬线字体
+    FreeSerif = 11,
+    /// 鸿雷小纸条青春体
+    HongLeiXiaoZhiTiao = 12,
+    /// 南西新圆体 简繁
+    NanXiXinYuanTi = 13,
+    /// 毛楷笔书体
+    MaoKenYingBiKaiShu = 14,
+}
+
+/// 根据字体类型加载字体
+/// 默认使用 Roboto-Regular.ttf
+fn load_font(font_type: FontType) -> Font<'static> {
+    let font_vec: Vec<u8> = match font_type {
+        FontType::RobotoRegular => include_bytes!("../fonts/Roboto-Regular.ttf").to_vec(),
+        FontType::RobotoBlack => include_bytes!("../fonts/Roboto-Black.ttf").to_vec(),
+        FontType::AlibabaThin => include_bytes!("../fonts/AlibabaPuHuiTi-3-35-Thin.ttf").to_vec(),
+        FontType::AlibabaRegular => include_bytes!("../fonts/AlibabaPuHuiTi-3-55-Regular.ttf").to_vec(),
+        FontType::AlibabaRegularL3 => include_bytes!("../fonts/AlibabaPuHuiTi-3-55-RegularL3.ttf").to_vec(),
+        FontType::AlibabaMedium => include_bytes!("../fonts/AlibabaPuHuiTi-3-65-Medium.ttf").to_vec(),
+        FontType::AlibabaSemiBold => include_bytes!("../fonts/AlibabaPuHuiTi-3-75-SemiBold.ttf").to_vec(),
+        FontType::AlibabaBold => include_bytes!("../fonts/AlibabaPuHuiTi-3-85-Bold.ttf").to_vec(),
+        FontType::AlibabaExtraBold => include_bytes!("../fonts/AlibabaPuHuiTi-3-95-ExtraBold.ttf").to_vec(),
+        FontType::AlibabaHeavy => include_bytes!("../fonts/AlibabaPuHuiTi-3-105-Heavy.ttf").to_vec(),
+        FontType::AlibabaBlack => include_bytes!("../fonts/AlibabaPuHuiTi-3-115-Black.ttf").to_vec(),
+        FontType::FreeSerif => include_bytes!("../fonts/FreeSerif.ttf").to_vec(),
+        FontType::HongLeiXiaoZhiTiao => include_bytes!("../fonts/鸿雷小纸条青春体.ttf").to_vec(),
+        FontType::NanXiXinYuanTi => include_bytes!("../fonts/南西新圆体-简繁.ttf").to_vec(),
+        FontType::MaoKenYingBiKaiShu => include_bytes!("../fonts/MaokenYingBiKaiShuJ_0.09.ttf").to_vec(),
+    };
+    // 使用 Box::leak 将数据泄漏到静态生命周期
+    let font_static: &'static [u8] = Box::leak(font_vec.into_boxed_slice());
+    Font::try_from_bytes(font_static).unwrap()
+}
+
 /// Add bordered-text to an image.
 /// The only font available as of now is Roboto.
 /// Note: A graphic design/text-drawing library is currently being developed, so stay tuned.
@@ -43,13 +105,25 @@ pub fn draw_text_with_border(
     y: i32,
     font_size: f32,
 ) {
+    draw_text_with_border_with_font(photon_img, text, x, y, font_size, FontType::RobotoRegular);
+}
+
+/// Add bordered-text to an image with specified font type.
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn draw_text_with_border_with_font(
+    photon_img: &mut PhotonImage,
+    text: &str,
+    x: i32,
+    y: i32,
+    font_size: f32,
+    font_type: FontType,
+) {
     let mut image = helpers::dyn_image_from_raw(photon_img).to_rgba8();
 
     let mut image2: DynamicImage =
         DynamicImage::new_luma8(image.width(), image.height());
 
-    let font = Vec::from(include_bytes!("../fonts/Roboto-Regular.ttf") as &[u8]);
-    let font = Font::try_from_bytes(&font).unwrap();
+    let font = load_font(font_type);
     let scale = Scale {
         x: font_size * 1.0,
         y: font_size,
@@ -119,10 +193,22 @@ pub fn draw_text(
     y: i32,
     font_size: f32,
 ) {
+    draw_text_with_font(photon_img, text, x, y, font_size, FontType::RobotoRegular);
+}
+
+/// Add text to an image with specified font type.
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn draw_text_with_font(
+    photon_img: &mut PhotonImage,
+    text: &str,
+    x: i32,
+    y: i32,
+    font_size: f32,
+    font_type: FontType,
+) {
     let mut image = helpers::dyn_image_from_raw(photon_img).to_rgba8();
 
-    let font = Vec::from(include_bytes!("../fonts/Roboto-Regular.ttf") as &[u8]);
-    let font = Font::try_from_bytes(&font).unwrap();
+    let font = load_font(font_type);
     let scale = Scale {
         x: font_size * 1.0,
         y: font_size,
@@ -133,6 +219,173 @@ pub fn draw_text(
         Rgba([255u8, 255u8, 255u8, 255u8]),
         x,
         y,
+        scale,
+        &font,
+        text,
+    );
+    let dynimage = image::DynamicImage::ImageRgba8(image);
+    photon_img.raw_pixels = dynimage.into_bytes();
+}
+
+/// Add text to an image with custom color.
+/// The only font available as of now is Roboto.
+///
+/// # Arguments
+/// * `photon_image` - A PhotonImage.
+/// * `text` - Text string to be drawn to the image.
+/// * `x` - x-coordinate of where first letter's 1st pixel should be drawn.
+/// * `y` - y-coordinate of where first letter's 1st pixel should be drawn.
+/// * `font_size` - Font size in pixels of the text to be drawn.
+/// * `r` - Red channel (0-255).
+/// * `g` - Green channel (0-255).
+/// * `b` - Blue channel (0-255).
+///
+/// # Example
+///
+/// ```no_run
+/// // For example to draw red text at 10, 10:
+/// use photon_rs::native::open_image;
+/// use photon_rs::text::draw_text_with_color;
+///
+/// let mut img = open_image("img.jpg").expect("File should open");
+/// draw_text_with_color(&mut img, "Hello!", 10_i32, 10_i32, 90_f32, 255u8, 0u8, 0u8);
+/// ```
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn draw_text_with_color(
+    photon_img: &mut PhotonImage,
+    text: &str,
+    x: i32,
+    y: i32,
+    font_size: f32,
+    r: u8,
+    g: u8,
+    b: u8,
+) {
+    draw_text_with_color_and_font(photon_img, text, x, y, font_size, r, g, b, FontType::RobotoRegular);
+}
+
+/// Add text to an image with custom color and specified font type.
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn draw_text_with_color_and_font(
+    photon_img: &mut PhotonImage,
+    text: &str,
+    x: i32,
+    y: i32,
+    font_size: f32,
+    r: u8,
+    g: u8,
+    b: u8,
+    font_type: FontType,
+) {
+    let mut image = helpers::dyn_image_from_raw(photon_img).to_rgba8();
+
+    let font = load_font(font_type);
+    let scale = Scale {
+        x: font_size * 1.0,
+        y: font_size,
+    };
+
+    draw_text_mut(
+        &mut image,
+        Rgba([r, g, b, 255u8]),
+        x,
+        y,
+        scale,
+        &font,
+        text,
+    );
+    let dynimage = image::DynamicImage::ImageRgba8(image);
+    photon_img.raw_pixels = dynimage.into_bytes();
+}
+
+/// Add bordered-text to an image with custom color.
+/// The only font available as of now is Roboto.
+///
+/// # Arguments
+/// * `photon_image` - A PhotonImage.
+/// * `text` - Text string to be drawn to the image.
+/// * `x` - x-coordinate of where first letter's 1st pixel should be drawn.
+/// * `y` - y-coordinate of where first letter's 1st pixel should be drawn.
+/// * `font_size` - Font size in pixels of the text to be drawn.
+/// * `r` - Red channel (0-255).
+/// * `g` - Green channel (0-255).
+/// * `b` - Blue channel (0-255).
+///
+/// # Example
+///
+/// ```no_run
+/// // For example to draw red text with border at 10, 10:
+/// use photon_rs::native::open_image;
+/// use photon_rs::text::draw_text_with_border_and_color;
+///
+/// let mut img = open_image("img.jpg").expect("File should open");
+/// draw_text_with_border_and_color(&mut img, "Hello!", 10_i32, 10_i32, 90_f32, 255u8, 0u8, 0u8);
+/// ```
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn draw_text_with_border_and_color(
+    photon_img: &mut PhotonImage,
+    text: &str,
+    x: i32,
+    y: i32,
+    font_size: f32,
+    r: u8,
+    g: u8,
+    b: u8,
+) {
+    draw_text_with_border_and_color_and_font(photon_img, text, x, y, font_size, r, g, b, FontType::RobotoRegular);
+}
+
+/// Add bordered-text to an image with custom color and specified font type.
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn draw_text_with_border_and_color_and_font(
+    photon_img: &mut PhotonImage,
+    text: &str,
+    x: i32,
+    y: i32,
+    font_size: f32,
+    r: u8,
+    g: u8,
+    b: u8,
+    font_type: FontType,
+) {
+    let mut image = helpers::dyn_image_from_raw(photon_img).to_rgba8();
+    let mut image2: DynamicImage = DynamicImage::new_luma8(image.width(), image.height());
+
+    let font = load_font(font_type);
+    let scale = Scale {
+        x: font_size * 1.0,
+        y: font_size,
+    };
+
+    // 绘制边框
+    draw_text_mut(
+        &mut image2,
+        Rgba([255u8, 255u8, 255u8, 255u8]),
+        x,
+        y,
+        scale,
+        &font,
+        text,
+    );
+
+    let mut image2 = image2.to_luma8();
+    dilate_mut(&mut image2, Norm::LInf, 4u8);
+
+    // 添加黑色边框
+    for (px, py) in ImageIterator::with_dimension(&image2.dimensions()) {
+        let pixval = 255 - image2.get_pixel(px, py)[0];
+        if pixval != 255 {
+            let new_pix = Rgba([0u8, 0u8, 0u8, 255u8]);
+            image.put_pixel(px, py, new_pix);
+        }
+    }
+
+    // 绘制自定义颜色的文本
+    draw_text_mut(
+        &mut image,
+        Rgba([r, g, b, 255u8]),
+        x + 10,
+        y - 10,
         scale,
         &font,
         text,

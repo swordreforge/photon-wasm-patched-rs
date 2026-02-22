@@ -13,7 +13,7 @@ use wasm_bindgen::prelude::*;
 #[cfg(all(target_family = "wasm", not(target_os = "wasi")))]
 use js_sys::Math::random;
 
-#[cfg(not(all(target_arch = "wasm64", not(target_os = "wasi"))))]
+#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"))))]
 use rand::Rng;
 
 /// Add randomized noise to an image.
@@ -43,11 +43,74 @@ pub fn add_noise_rand(photon_image: &mut PhotonImage) {
     let mut rng = rand::thread_rng();
 
     for (x, y) in ImageIterator::with_dimension(&img.dimensions()) {
-        #[cfg(not(all(target_arch = "wasm64", not(target_os = "wasi"))))]
+        #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"))))]
         let offset = rng.gen_range(0, 150);
 
-        #[cfg(all(target_arch = "wasm64", not(target_os = "wasi")))]
+        #[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
         let offset = (random() * 150.0) as u8;
+
+        let px =
+            img.get_pixel(x, y).map(
+                |ch| {
+                    if ch <= 255 - offset {
+                        ch + offset
+                    } else {
+                        255
+                    }
+                },
+            );
+        img.put_pixel(x, y, px);
+    }
+    photon_image.raw_pixels = img.into_bytes();
+}
+
+/// Add randomized noise to an image with adjustable strength.
+/// This function adds Gaussian noise to each pixel by incrementing each channel by a randomized offset.
+/// The maximum offset is controlled by the strength parameter.
+/// **[WASM SUPPORT IS AVAILABLE]**
+/// # Arguments
+/// * `photon_image` - A PhotonImage.
+/// * `strength` - Noise strength. Range: 0.0 to 10.0.
+///   - 0.0: No noise
+///   - 1.0: Subtle noise (max offset 0-15)
+///   - 5.0: Moderate noise (max offset 0-75)
+///   - 10.0: Strong noise (max offset 0-150, equivalent to add_noise_rand)
+///
+/// # Example
+///
+/// ```no_run
+/// // For example, to add noise with strength 2.0:
+/// use photon_rs::native::open_image;
+/// use photon_rs::noise::add_noise_rand_with_strength;
+///
+/// let mut img = open_image("img.jpg").expect("File should open");
+/// add_noise_rand_with_strength(&mut img, 2.0);
+/// ```
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn add_noise_rand_with_strength(photon_image: &mut PhotonImage, strength: f32) {
+    // Clamp strength to valid range
+    let strength = strength.clamp(0.0, 10.0);
+    
+    // Calculate maximum offset based on strength
+    // Original function uses 150, so we scale accordingly
+    let max_offset = (15.0 * strength) as u8;
+    
+    // If strength is 0, no noise to add
+    if max_offset == 0 {
+        return;
+    }
+    
+    let mut img = helpers::dyn_image_from_raw(photon_image);
+
+    #[cfg(not(all(target_arch = "wasm64", not(target_os = "wasi"))))]
+    let mut rng = rand::thread_rng();
+
+    for (x, y) in ImageIterator::with_dimension(&img.dimensions()) {
+        #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"))))]
+        let offset = rng.gen_range(0, max_offset as i32) as u8;
+
+        #[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
+        let offset = (random() * max_offset as f64) as u8;
 
         let px =
             img.get_pixel(x, y).map(
@@ -87,10 +150,10 @@ pub fn pink_noise(photon_image: &mut PhotonImage) {
     #[cfg(not(all(target_arch = "wasm64", not(target_os = "wasi"))))]
     let mut rng = rand::thread_rng();
 
-    #[cfg(not(all(target_arch = "wasm64", not(target_os = "wasi"))))]
+    #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"))))]
     let mut rng_gen = move || rng.gen();
 
-    #[cfg(all(target_arch = "wasm64", not(target_os = "wasi")))]
+    #[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
     let rng_gen = || random();
 
     for (x, y) in ImageIterator::with_dimension(&img.dimensions()) {
