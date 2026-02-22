@@ -1,10 +1,11 @@
 use wasm_bindgen::prelude::*;
-use photon_rs::{PhotonImage, filters, native, monochrome, transform, effects};
+use photon_rs::{PhotonImage, filters, native, monochrome, transform, effects, colour_spaces};
 use base64::{Engine as _, engine::general_purpose};
 
 #[wasm_bindgen]
 pub struct ImageProcessor {
     image: PhotonImage,
+    original_image: PhotonImage,
     original_bytes: Vec<u8>,
     width: u32,
     height: u32,
@@ -16,7 +17,8 @@ impl ImageProcessor {
     pub fn new(width: u32, height: u32, data: &[u8]) -> Result<ImageProcessor, JsValue> {
         let image = PhotonImage::new(data.to_vec(), width, height);
         Ok(ImageProcessor {
-            image,
+            image: image.clone(),
+            original_image: image,
             original_bytes: data.to_vec(),
             width,
             height,
@@ -29,7 +31,8 @@ impl ImageProcessor {
         let width = image.get_width();
         let height = image.get_height();
         Ok(ImageProcessor {
-            image,
+            image: image.clone(),
+            original_image: image,
             original_bytes: bytes.to_vec(),
             width,
             height,
@@ -118,46 +121,75 @@ impl ImageProcessor {
         // 注意: 这里需要从原始字节数组中重建图像，但 original_bytes 是加载时的完整图像数据
         // 由于 PhotonImage 没有直接从字节数组克隆的方法，我们需要创建一个新的 ImageProcessor
         if let Ok(new_image) = native::open_image_from_bytes(&self.original_bytes) {
-            self.image = new_image;
+            self.image = new_image.clone();
+            self.original_image = new_image;
         }
     }
 
-    // 可调节参数的滤镜 - 使用简单的滤镜字符串
+    // 可调节参数的滤镜 - 直接调用 photon-rs 函数
     pub fn apply_brightness(&mut self, level: i32) {
-        filters::filter(&mut self.image, &format!("brightness:{}", level));
+        // brightness 范围: -255 到 255
+        let clamped_level = level.clamp(-255, 255) as i16;
+        effects::adjust_brightness(&mut self.image, clamped_level);
     }
 
     pub fn apply_contrast(&mut self, level: f32) {
-        filters::filter(&mut self.image, &format!("contrast:{}", level));
+        // contrast 范围: -255 到 255 (JavaScript 端已转换)
+        let clamped_level = level.clamp(-255.0, 255.0);
+        effects::adjust_contrast(&mut self.image, clamped_level);
     }
 
     pub fn apply_saturation(&mut self, level: f32) {
-        filters::filter(&mut self.image, &format!("saturation:{}", level));
+        // saturation 范围: -1 到 1 (JavaScript 端已转换)
+        let clamped_level = level.clamp(-1.0, 1.0);
+        
+        if clamped_level >= 0.0 {
+            colour_spaces::saturate_hsl(&mut self.image, clamped_level);
+        } else {
+            colour_spaces::desaturate_hsl(&mut self.image, -clamped_level);
+        }
     }
 
     pub fn apply_hue(&mut self, level: i32) {
-        filters::filter(&mut self.image, &format!("hue:{}", level));
+        // hue 范围: -360 到 360
+        let clamped_level = level.clamp(-360, 360);
+        colour_spaces::hsl(&mut self.image, "shift_hue", clamped_level as f32);
     }
 
     // 批量应用多个调节（避免重复重置）
     pub fn apply_all_adjustments(&mut self, brightness: i32, contrast: f32, saturation: f32, hue: i32) {
-        self.reset();
+        // 基于原始图像应用所有调整
+        let mut temp_img = self.original_image.clone();
 
+        // 亮度: 输入 -255 到 255
         if brightness != 0 {
-            filters::filter(&mut self.image, &format!("brightness:{}", brightness));
+            let clamped_brightness = brightness.clamp(-255, 255) as i16;
+            effects::adjust_brightness(&mut temp_img, clamped_brightness);
         }
 
-        if contrast != 100.0 {
-            filters::filter(&mut self.image, &format!("contrast:{}", contrast));
+        // 对比度: 输入 -255 到 255 (已经转换过)
+        if contrast != 0.0 {
+            let clamped_contrast = contrast.clamp(-255.0, 255.0);
+            effects::adjust_contrast(&mut temp_img, clamped_contrast);
         }
 
-        if saturation != 100.0 {
-            filters::filter(&mut self.image, &format!("saturation:{}", saturation));
+        // 饱和度: 输入 -1 到 1 (已经转换过)
+        if saturation != 0.0 {
+            let clamped_saturation = saturation.clamp(-1.0, 1.0);
+            if clamped_saturation >= 0.0 {
+                colour_spaces::saturate_hsl(&mut temp_img, clamped_saturation);
+            } else {
+                colour_spaces::desaturate_hsl(&mut temp_img, -clamped_saturation);
+            }
         }
 
+        // 色相: 输入 -360 到 360
         if hue != 0 {
-            filters::filter(&mut self.image, &format!("hue:{}", hue));
+            let clamped_hue = hue.clamp(-360, 360);
+            colour_spaces::hsl(&mut temp_img, "shift_hue", clamped_hue as f32);
         }
+
+        self.image = temp_img;
     }
 
     // 变换操作
