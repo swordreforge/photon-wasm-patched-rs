@@ -84,7 +84,12 @@ impl ImageProcessor {
 
     // 重置到原始图像
     pub fn reset(&mut self) {
-        self.image = PhotonImage::new(self.original_bytes.clone(), self.width, self.height);
+        // 使用 open_image_from_bytes 重新从原始字节创建图像
+        // 注意: 这里需要从原始字节数组中重建图像，但 original_bytes 是加载时的完整图像数据
+        // 由于 PhotonImage 没有直接从字节数组克隆的方法，我们需要创建一个新的 ImageProcessor
+        if let Ok(new_image) = native::open_image_from_bytes(&self.original_bytes) {
+            self.image = new_image;
+        }
     }
 
     // 可调节参数的滤镜 - 使用简单的滤镜字符串
