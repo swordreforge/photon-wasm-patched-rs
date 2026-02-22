@@ -79,23 +79,11 @@ impl ImageProcessor {
     }
 
     /// 绘制文本，支持选择字体类型
-    /// font_type: 0-14, 对应不同的字体
+    /// font_type: 0-2, 对应不同的字体
     pub fn draw_text_with_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, font_type: u8) {
         let ft = match font_type {
-            1 => text::FontType::RobotoBlack,
-            2 => text::FontType::AlibabaThin,
-            3 => text::FontType::AlibabaRegular,
-            4 => text::FontType::AlibabaRegularL3,
-            5 => text::FontType::AlibabaMedium,
-            6 => text::FontType::AlibabaSemiBold,
-            7 => text::FontType::AlibabaBold,
-            8 => text::FontType::AlibabaExtraBold,
-            9 => text::FontType::AlibabaHeavy,
-            10 => text::FontType::AlibabaBlack,
-            11 => text::FontType::FreeSerif,
-            12 => text::FontType::HongLeiXiaoZhiTiao,
-            13 => text::FontType::NanXiXinYuanTi,
-            14 => text::FontType::MaoKenYingBiKaiShu,
+            1 => text::FontType::AlibabaRegular,
+            2 => text::FontType::HongLeiXiaoZhiTiao,
             _ => text::FontType::RobotoRegular,
         };
         text::draw_text_with_font(&mut self.image, text, x, y, font_size, ft);
@@ -106,23 +94,11 @@ impl ImageProcessor {
     }
 
     /// 绘制带阴影的文本，支持选择字体类型
-    /// font_type: 0-14, 对应不同的字体
+    /// font_type: 0-2, 对应不同的字体
     pub fn draw_text_with_shadow_and_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, font_type: u8) {
         let ft = match font_type {
-            1 => text::FontType::RobotoBlack,
-            2 => text::FontType::AlibabaThin,
-            3 => text::FontType::AlibabaRegular,
-            4 => text::FontType::AlibabaRegularL3,
-            5 => text::FontType::AlibabaMedium,
-            6 => text::FontType::AlibabaSemiBold,
-            7 => text::FontType::AlibabaBold,
-            8 => text::FontType::AlibabaExtraBold,
-            9 => text::FontType::AlibabaHeavy,
-            10 => text::FontType::AlibabaBlack,
-            11 => text::FontType::FreeSerif,
-            12 => text::FontType::HongLeiXiaoZhiTiao,
-            13 => text::FontType::NanXiXinYuanTi,
-            14 => text::FontType::MaoKenYingBiKaiShu,
+            1 => text::FontType::AlibabaRegular,
+            2 => text::FontType::HongLeiXiaoZhiTiao,
             _ => text::FontType::RobotoRegular,
         };
         text::draw_text_with_border_with_font(&mut self.image, text, x, y, font_size, ft);
@@ -133,23 +109,11 @@ impl ImageProcessor {
     }
 
     /// 绘制带颜色的文本，支持选择字体类型
-    /// font_type: 0-14, 对应不同的字体
+    /// font_type: 0-2, 对应不同的字体
     pub fn draw_text_with_color_and_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, r: u8, g: u8, b: u8, font_type: u8) {
         let ft = match font_type {
-            1 => text::FontType::RobotoBlack,
-            2 => text::FontType::AlibabaThin,
-            3 => text::FontType::AlibabaRegular,
-            4 => text::FontType::AlibabaRegularL3,
-            5 => text::FontType::AlibabaMedium,
-            6 => text::FontType::AlibabaSemiBold,
-            7 => text::FontType::AlibabaBold,
-            8 => text::FontType::AlibabaExtraBold,
-            9 => text::FontType::AlibabaHeavy,
-            10 => text::FontType::AlibabaBlack,
-            11 => text::FontType::FreeSerif,
-            12 => text::FontType::HongLeiXiaoZhiTiao,
-            13 => text::FontType::NanXiXinYuanTi,
-            14 => text::FontType::MaoKenYingBiKaiShu,
+            1 => text::FontType::AlibabaRegular,
+            2 => text::FontType::HongLeiXiaoZhiTiao,
             _ => text::FontType::RobotoRegular,
         };
         text::draw_text_with_color_and_font(&mut self.image, text, x, y, font_size, r, g, b, ft);
@@ -160,23 +124,11 @@ impl ImageProcessor {
     }
 
     /// 绘制带阴影和颜色的文本，支持选择字体类型
-    /// font_type: 0-14, 对应不同的字体
+    /// font_type: 0-2, 对应不同的字体
     pub fn draw_text_with_shadow_and_color_and_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, r: u8, g: u8, b: u8, font_type: u8) {
         let ft = match font_type {
-            1 => text::FontType::RobotoBlack,
-            2 => text::FontType::AlibabaThin,
-            3 => text::FontType::AlibabaRegular,
-            4 => text::FontType::AlibabaRegularL3,
-            5 => text::FontType::AlibabaMedium,
-            6 => text::FontType::AlibabaSemiBold,
-            7 => text::FontType::AlibabaBold,
-            8 => text::FontType::AlibabaExtraBold,
-            9 => text::FontType::AlibabaHeavy,
-            10 => text::FontType::AlibabaBlack,
-            11 => text::FontType::FreeSerif,
-            12 => text::FontType::HongLeiXiaoZhiTiao,
-            13 => text::FontType::NanXiXinYuanTi,
-            14 => text::FontType::MaoKenYingBiKaiShu,
+            1 => text::FontType::AlibabaRegular,
+            2 => text::FontType::HongLeiXiaoZhiTiao,
             _ => text::FontType::RobotoRegular,
         };
         text::draw_text_with_border_and_color_and_font(&mut self.image, text, x, y, font_size, r, g, b, ft);
@@ -463,5 +415,6 @@ impl ImageProcessor {
 
 #[wasm_bindgen(start)]
 pub fn init() {
+    #[cfg(debug_assertions)]
     console_error_panic_hook::set_once();
 }

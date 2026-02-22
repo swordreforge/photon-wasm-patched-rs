@@ -11,3 +11,12 @@ wasm-bindgen = "0.2"
 photon-rs = { path = "photon-master/crate" }
 base64 = "0.21"
 console_error_panic_hook = "0.1"
+
+[profile.release]
+opt-level = "z"          # 优先优化代码大小
+lto = true              # 开启链接时优化
+codegen-units = 1       # 单个代码生成单元以获得更好的优化效果
+panic = "abort"         # 在 panic 时直接终止，减少 unwind 代码
+strip = "symbols"       # 移除符号
+debug = false           # 不包含调试信息
+incremental = false     # 关闭增量编译

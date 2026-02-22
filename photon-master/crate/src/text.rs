@@ -20,34 +20,10 @@ use wasm_bindgen::prelude::*;
 pub enum FontType {
     /// Roboto 常规字体（默认）
     RobotoRegular = 0,
-    /// Roboto 粗体字体
-    RobotoBlack = 1,
-    /// 阿里普惠体 细体
-    AlibabaThin = 2,
     /// 阿里普惠体 常规
-    AlibabaRegular = 3,
-    /// 阿里普惠体 常规 L3
-    AlibabaRegularL3 = 4,
-    /// 阿里普惠体 中等
-    AlibabaMedium = 5,
-    /// 阿里普惠体 半粗
-    AlibabaSemiBold = 6,
-    /// 阿里普惠体 粗体
-    AlibabaBold = 7,
-    /// 阿里普惠体 特粗
-    AlibabaExtraBold = 8,
-    /// 阿里普惠体 重体
-    AlibabaHeavy = 9,
-    /// 阿里普惠体 黑体
-    AlibabaBlack = 10,
-    /// FreeSerif 衬线字体
-    FreeSerif = 11,
+    AlibabaRegular = 1,
     /// 鸿雷小纸条青春体
-    HongLeiXiaoZhiTiao = 12,
-    /// 南西新圆体 简繁
-    NanXiXinYuanTi = 13,
-    /// 毛楷笔书体
-    MaoKenYingBiKaiShu = 14,
+    HongLeiXiaoZhiTiao = 2,
 }
 
 /// 根据字体类型加载字体
@@ -55,20 +31,8 @@ pub enum FontType {
 fn load_font(font_type: FontType) -> Font<'static> {
     let font_vec: Vec<u8> = match font_type {
         FontType::RobotoRegular => include_bytes!("../fonts/Roboto-Regular.ttf").to_vec(),
-        FontType::RobotoBlack => include_bytes!("../fonts/Roboto-Black.ttf").to_vec(),
-        FontType::AlibabaThin => include_bytes!("../fonts/AlibabaPuHuiTi-3-35-Thin.ttf").to_vec(),
         FontType::AlibabaRegular => include_bytes!("../fonts/AlibabaPuHuiTi-3-55-Regular.ttf").to_vec(),
-        FontType::AlibabaRegularL3 => include_bytes!("../fonts/AlibabaPuHuiTi-3-55-RegularL3.ttf").to_vec(),
-        FontType::AlibabaMedium => include_bytes!("../fonts/AlibabaPuHuiTi-3-65-Medium.ttf").to_vec(),
-        FontType::AlibabaSemiBold => include_bytes!("../fonts/AlibabaPuHuiTi-3-75-SemiBold.ttf").to_vec(),
-        FontType::AlibabaBold => include_bytes!("../fonts/AlibabaPuHuiTi-3-85-Bold.ttf").to_vec(),
-        FontType::AlibabaExtraBold => include_bytes!("../fonts/AlibabaPuHuiTi-3-95-ExtraBold.ttf").to_vec(),
-        FontType::AlibabaHeavy => include_bytes!("../fonts/AlibabaPuHuiTi-3-105-Heavy.ttf").to_vec(),
-        FontType::AlibabaBlack => include_bytes!("../fonts/AlibabaPuHuiTi-3-115-Black.ttf").to_vec(),
-        FontType::FreeSerif => include_bytes!("../fonts/FreeSerif.ttf").to_vec(),
         FontType::HongLeiXiaoZhiTiao => include_bytes!("../fonts/鸿雷小纸条青春体.ttf").to_vec(),
-        FontType::NanXiXinYuanTi => include_bytes!("../fonts/南西新圆体-简繁.ttf").to_vec(),
-        FontType::MaoKenYingBiKaiShu => include_bytes!("../fonts/MaokenYingBiKaiShuJ_0.09.ttf").to_vec(),
     };
     // 使用 Box::leak 将数据泄漏到静态生命周期
     let font_static: &'static [u8] = Box::leak(font_vec.into_boxed_slice());
