@@ -8,6 +8,6 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wasm-bindgen = "0.2"
-photon-rs = "0.3"
+photon-rs = { path = "photon-master/crate" }
 base64 = "0.21"
 console_error_panic_hook = "0.1"

@@ -4,20 +4,23 @@
 export class ImageProcessor {
     free(): void;
     [Symbol.dispose](): void;
-    apply_all_adjustments(brightness: number, contrast: number, saturation: number, hue: number): void;
+    apply_all_adjustments(brightness: number, contrast: number, saturation: number, hue: number, lightness: number, lightness_color_space: string, gamma_red: number, gamma_green: number, gamma_blue: number, sharpen_strength: number): void;
     apply_brightness(level: number): void;
     apply_contrast(level: number): void;
     apply_dither(depth: number): void;
     apply_duotone(r1: number, g1: number, b1: number, r2: number, g2: number, b2: number): void;
+    apply_gamma(red: number, green: number, blue: number): void;
     apply_grayscale(): void;
     apply_halftone(): void;
     apply_hue(level: number): void;
     apply_invert(): void;
+    apply_lightness(level: number, color_space: string): void;
     apply_oil(radius: number, intensity: number): void;
     apply_pixelate(pixel_size: number): void;
     apply_preset_filter(filter_name: string): void;
     apply_saturation(level: number): void;
     apply_sepia(): void;
+    apply_sharpen(strength: number): void;
     apply_solarize(): void;
     apply_threshold(threshold: number): void;
     crop(x1: number, y1: number, x2: number, y2: number): void;
@@ -2781,6 +2784,30 @@ export function sepia(img: PhotonImage): void;
 export function sharpen(photon_image: PhotonImage): void;
 
 /**
+ * Sharpen an image with adjustable strength.
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage.
+ * * `strength` - Sharpening strength. Range: 0.0 to 10.0.
+ *   - 0.0: No sharpening effect
+ *   - 1.0: Standard sharpening (equivalent to sharpen())
+ *   - >1.0: Stronger sharpening
+ *   - <1.0: Subtle sharpening
+ *
+ * # Example
+ *
+ * ```no_run
+ * // For example, to sharpen an image with strength 2.0:
+ * use photon_rs::conv::sharpen_with_strength;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * sharpen_with_strength(&mut img, 2.0);
+ * ```
+ */
+export function sharpen_with_strength(photon_image: PhotonImage, strength: number): void;
+
+/**
  * Shear the image along the X axis.
  * A sheared PhotonImage is returned.
  *
@@ -3055,20 +3082,23 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_imageprocessor_free: (a: number, b: number) => void;
-    readonly imageprocessor_apply_all_adjustments: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly imageprocessor_apply_all_adjustments: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number, l: number) => void;
     readonly imageprocessor_apply_brightness: (a: number, b: number) => void;
     readonly imageprocessor_apply_contrast: (a: number, b: number) => void;
     readonly imageprocessor_apply_dither: (a: number, b: number) => void;
     readonly imageprocessor_apply_duotone: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => void;
+    readonly imageprocessor_apply_gamma: (a: number, b: number, c: number, d: number) => void;
     readonly imageprocessor_apply_grayscale: (a: number) => void;
     readonly imageprocessor_apply_halftone: (a: number) => void;
     readonly imageprocessor_apply_hue: (a: number, b: number) => void;
     readonly imageprocessor_apply_invert: (a: number) => void;
+    readonly imageprocessor_apply_lightness: (a: number, b: number, c: number, d: number) => void;
     readonly imageprocessor_apply_oil: (a: number, b: number, c: number) => void;
     readonly imageprocessor_apply_pixelate: (a: number, b: number) => void;
     readonly imageprocessor_apply_preset_filter: (a: number, b: number, c: number) => void;
     readonly imageprocessor_apply_saturation: (a: number, b: number) => void;
     readonly imageprocessor_apply_sepia: (a: number) => void;
+    readonly imageprocessor_apply_sharpen: (a: number, b: number) => void;
     readonly imageprocessor_apply_solarize: (a: number) => void;
     readonly imageprocessor_apply_threshold: (a: number, b: number) => void;
     readonly imageprocessor_crop: (a: number, b: number, c: number, d: number, e: number) => void;
@@ -3119,6 +3149,7 @@ export interface InitOutput {
     readonly noise_reduction: (a: number) => void;
     readonly prewitt_horizontal: (a: number) => void;
     readonly sharpen: (a: number) => void;
+    readonly sharpen_with_strength: (a: number, b: number) => void;
     readonly sobel_global: (a: number) => void;
     readonly sobel_horizontal: (a: number) => void;
     readonly sobel_vertical: (a: number) => void;

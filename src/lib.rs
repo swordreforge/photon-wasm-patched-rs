@@ -156,8 +156,72 @@ impl ImageProcessor {
         colour_spaces::hsl(&mut self.image, "shift_hue", clamped_level as f32);
     }
 
+    pub fn apply_lightness(&mut self, level: f32, color_space: &str) {
+        // lightness 范围: -1 到 1 (负值变暗，正值变亮)
+        let clamped_level = level.clamp(-1.0, 1.0);
+        
+        match color_space {
+            "hsl" => {
+                if clamped_level >= 0.0 {
+                    colour_spaces::lighten_hsl(&mut self.image, clamped_level);
+                } else {
+                    colour_spaces::darken_hsl(&mut self.image, -clamped_level);
+                }
+            }
+            "lch" => {
+                if clamped_level >= 0.0 {
+                    colour_spaces::lighten_lch(&mut self.image, clamped_level);
+                } else {
+                    colour_spaces::darken_lch(&mut self.image, -clamped_level);
+                }
+            }
+            "hsv" => {
+                if clamped_level >= 0.0 {
+                    colour_spaces::lighten_hsv(&mut self.image, clamped_level);
+                } else {
+                    colour_spaces::darken_hsv(&mut self.image, -clamped_level);
+                }
+            }
+            "hsluv" => {
+                if clamped_level >= 0.0 {
+                    colour_spaces::lighten_hsluv(&mut self.image, clamped_level);
+                } else {
+                    colour_spaces::darken_hsluv(&mut self.image, -clamped_level);
+                }
+            }
+            _ => {
+                // 默认使用 HSL
+                if clamped_level >= 0.0 {
+                    colour_spaces::lighten_hsl(&mut self.image, clamped_level);
+                } else {
+                    colour_spaces::darken_hsl(&mut self.image, -clamped_level);
+                }
+            }
+        }
+    }
+
+    pub fn apply_gamma(&mut self, red: f32, green: f32, blue: f32) {
+        // gamma 范围: 0.1 到 10.0，1.0 表示无变化
+        let clamped_red = red.clamp(0.1, 10.0);
+        let clamped_green = green.clamp(0.1, 10.0);
+        let clamped_blue = blue.clamp(0.1, 10.0);
+        colour_spaces::gamma_correction(&mut self.image, clamped_red, clamped_green, clamped_blue);
+    }
+
+    pub fn apply_sharpen(&mut self, strength: f32) {
+        // strength 范围: 0.0 到 10.0
+        let clamped_strength = strength.clamp(0.0, 10.0);
+        photon_rs::conv::sharpen_with_strength(&mut self.image, clamped_strength);
+    }
+
+    pub fn apply_noise_reduction(&mut self, strength: f32) {
+        // strength 范围: 0.0 到 10.0
+        let clamped_strength = strength.clamp(0.0, 10.0);
+        photon_rs::conv::noise_reduction_with_strength(&mut self.image, clamped_strength);
+    }
+
     // 批量应用多个调节（避免重复重置）
-    pub fn apply_all_adjustments(&mut self, brightness: i32, contrast: f32, saturation: f32, hue: i32) {
+    pub fn apply_all_adjustments(&mut self, brightness: i32, contrast: f32, saturation: f32, hue: i32, lightness: f32, lightness_color_space: &str, gamma_red: f32, gamma_green: f32, gamma_blue: f32, sharpen_strength: f32, noise_reduction_strength: f32) {
         // 基于原始图像应用所有调整
         let mut temp_img = self.original_image.clone();
 
@@ -187,6 +251,69 @@ impl ImageProcessor {
         if hue != 0 {
             let clamped_hue = hue.clamp(-360, 360);
             colour_spaces::hsl(&mut temp_img, "shift_hue", clamped_hue as f32);
+        }
+
+        // 明度: 输入 -1 到 1
+        if lightness != 0.0 {
+            let clamped_lightness = lightness.clamp(-1.0, 1.0);
+            match lightness_color_space {
+                "hsl" => {
+                    if clamped_lightness >= 0.0 {
+                        colour_spaces::lighten_hsl(&mut temp_img, clamped_lightness);
+                    } else {
+                        colour_spaces::darken_hsl(&mut temp_img, -clamped_lightness);
+                    }
+                }
+                "lch" => {
+                    if clamped_lightness >= 0.0 {
+                        colour_spaces::lighten_lch(&mut temp_img, clamped_lightness);
+                    } else {
+                        colour_spaces::darken_lch(&mut temp_img, -clamped_lightness);
+                    }
+                }
+                "hsv" => {
+                    if clamped_lightness >= 0.0 {
+                        colour_spaces::lighten_hsv(&mut temp_img, clamped_lightness);
+                    } else {
+                        colour_spaces::darken_hsv(&mut temp_img, -clamped_lightness);
+                    }
+                }
+                "hsluv" => {
+                    if clamped_lightness >= 0.0 {
+                        colour_spaces::lighten_hsluv(&mut temp_img, clamped_lightness);
+                    } else {
+                        colour_spaces::darken_hsluv(&mut temp_img, -clamped_lightness);
+                    }
+                }
+                _ => {
+                    // 默认使用 HSL
+                    if clamped_lightness >= 0.0 {
+                        colour_spaces::lighten_hsl(&mut temp_img, clamped_lightness);
+                    } else {
+                        colour_spaces::darken_hsl(&mut temp_img, -clamped_lightness);
+                    }
+                }
+            }
+        }
+
+        // 伽马校正
+        if gamma_red != 1.0 || gamma_green != 1.0 || gamma_blue != 1.0 {
+            let clamped_red = gamma_red.clamp(0.1, 10.0);
+            let clamped_green = gamma_green.clamp(0.1, 10.0);
+            let clamped_blue = gamma_blue.clamp(0.1, 10.0);
+            colour_spaces::gamma_correction(&mut temp_img, clamped_red, clamped_green, clamped_blue);
+        }
+
+        // 锐化
+        if sharpen_strength != 0.0 {
+            let clamped_strength = sharpen_strength.clamp(0.0, 10.0);
+            photon_rs::conv::sharpen_with_strength(&mut temp_img, clamped_strength);
+        }
+
+        // 降噪
+        if noise_reduction_strength != 0.0 {
+            let clamped_strength = noise_reduction_strength.clamp(0.0, 10.0);
+            photon_rs::conv::noise_reduction_with_strength(&mut temp_img, clamped_strength);
         }
 
         self.image = temp_img;

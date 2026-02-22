@@ -57,6 +57,55 @@ pub fn noise_reduction(photon_image: &mut PhotonImage) {
     );
 }
 
+/// Noise reduction with adjustable strength.
+///
+/// # Arguments
+/// * `photon_image` - A PhotonImage.
+/// * `strength` - Noise reduction strength. Range: 0.0 to 10.0.
+///   - 0.0: No noise reduction
+///   - 1.0: Standard noise reduction (equivalent to noise_reduction())
+///   - >1.0: Stronger noise reduction (more smoothing)
+///   - <1.0: Subtle noise reduction (preserves more detail)
+///
+/// # Example
+///
+/// ```no_run
+/// // For example, to apply noise reduction with strength 2.0:
+/// use photon_rs::conv::noise_reduction_with_strength;
+/// use photon_rs::native::open_image;
+///
+/// let mut img = open_image("img.jpg").expect("File should open");
+/// noise_reduction_with_strength(&mut img, 2.0);
+/// ```
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn noise_reduction_with_strength(photon_image: &mut PhotonImage, strength: f32) {
+    // Clamp strength to valid range
+    let strength = strength.clamp(0.0, 10.0);
+    
+    // Create a dynamic noise reduction kernel based on strength
+    // Standard kernel: [0, -1, 7, -1, 5, 9, 0, 7, 9]
+    // Adjust the weights based on strength to control smoothing intensity
+    // Higher strength = higher surrounding weights = more smoothing
+    let surround_weight = 7.0 + 2.0 * strength;
+    let center_weight = 5.0 + 4.0 * strength;
+    let diagonal_weight = 9.0 + 1.0 * strength;
+    let edge_weight = -1.0; // Keep edge detection constant
+    
+    let kernel = [
+        0.0_f32,
+        edge_weight,
+        surround_weight,
+        edge_weight,
+        center_weight,
+        diagonal_weight,
+        0.0_f32,
+        surround_weight,
+        diagonal_weight,
+    ];
+    
+    conv(photon_image, kernel);
+}
+
 /// Sharpen an image.
 ///
 /// # Arguments

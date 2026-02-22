@@ -1,0 +1,40 @@
+site_name: 'Photon'
+site_description: 'Documentation site for Photon, a high-performance web/native image processing library'
+site_author: "Silvia O'Dwyer"
+site_url: 'https://github.com/silvia-odwyer/photon'
+repo_name: 'silvia-odwyer/photon'
+repo_url: 'https://github.com/silvia-odwyer/photon'
+
+theme:
+  name: 'material'
+  features:
+    - tabs
+  icon:
+    logo: material/library
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - minify:
+      minify_html: true
+
+# Page tree
+nav:
+  - About: index.md
+  - Getting started: getting-started.md
+  - Using Photon Natively: using-photon-natively.md
+  - Using Photon on The Web: using-photon-web.md
+  - Using Photon with Node: using-photon-node.md
+  - Using Photon with Cloudflare Workers: photon-cloudflare-workers.md
+  - All Functions: all-effects.md
+  - Web Tutorial: web-tutorial.md
+  - Native Tutorial: native-tutorial.md
+  - Serialize to JSON: serialize-to-json.md
+  - Get A Docs Site Like This: isotope-agents.md
+  - Contributing: contributing.md
+  - Contact: contact-developer.md
