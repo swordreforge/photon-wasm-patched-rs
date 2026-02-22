@@ -1,5 +1,5 @@
 use wasm_bindgen::prelude::*;
-use photon_rs::{PhotonImage, filters, native, monochrome};
+use photon_rs::{PhotonImage, filters, native, monochrome, transform, effects};
 use base64::{Engine as _, engine::general_purpose};
 
 #[wasm_bindgen]
@@ -82,6 +82,36 @@ impl ImageProcessor {
         monochrome::threshold(&mut self.image, threshold);
     }
 
+    // 更多预设滤镜
+    pub fn apply_preset_filter(&mut self, filter_name: &str) {
+        filters::filter(&mut self.image, filter_name);
+    }
+
+    // 特殊效果
+    pub fn apply_pixelate(&mut self, pixel_size: i32) {
+        effects::pixelize(&mut self.image, pixel_size);
+    }
+
+    pub fn apply_halftone(&mut self) {
+        effects::halftone(&mut self.image);
+    }
+
+    pub fn apply_oil(&mut self, radius: i32, intensity: f64) {
+        effects::oil(&mut self.image, radius, intensity);
+    }
+
+    pub fn apply_solarize(&mut self) {
+        effects::solarize(&mut self.image);
+    }
+
+    pub fn apply_dither(&mut self, depth: u32) {
+        effects::dither(&mut self.image, depth);
+    }
+
+    pub fn apply_duotone(&mut self, r1: u8, g1: u8, b1: u8, r2: u8, g2: u8, b2: u8) {
+        effects::duotone(&mut self.image, photon_rs::Rgb::new(r1, g1, b1), photon_rs::Rgb::new(r2, g2, b2));
+    }
+
     // 重置到原始图像
     pub fn reset(&mut self) {
         // 使用 open_image_from_bytes 重新从原始字节创建图像
@@ -128,6 +158,33 @@ impl ImageProcessor {
         if hue != 0 {
             filters::filter(&mut self.image, &format!("hue:{}", hue));
         }
+    }
+
+    // 变换操作
+    pub fn rotate_90(&mut self) {
+        self.image = transform::rotate(&self.image, 90.0);
+        self.width = self.image.get_width();
+        self.height = self.image.get_height();
+    }
+
+    pub fn flip_horizontal(&mut self) {
+        transform::fliph(&mut self.image);
+    }
+
+    pub fn flip_vertical(&mut self) {
+        transform::flipv(&mut self.image);
+    }
+
+    pub fn crop(&mut self, x1: u32, y1: u32, x2: u32, y2: u32) {
+        self.image = transform::crop(&self.image, x1, y1, x2, y2);
+        self.width = self.image.get_width();
+        self.height = self.image.get_height();
+    }
+
+    pub fn resize(&mut self, new_width: u32, new_height: u32) {
+        self.image = transform::resize(&self.image, new_width, new_height, photon_rs::transform::SamplingFilter::Nearest);
+        self.width = self.image.get_width();
+        self.height = self.image.get_height();
     }
 }
 
