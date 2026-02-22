@@ -39,8 +39,28 @@ export class ImageProcessor {
     apply_contrast(level) {
         wasm.imageprocessor_apply_contrast(this.__wbg_ptr, level);
     }
+    /**
+     * @param {number} depth
+     */
+    apply_dither(depth) {
+        wasm.imageprocessor_apply_dither(this.__wbg_ptr, depth);
+    }
+    /**
+     * @param {number} r1
+     * @param {number} g1
+     * @param {number} b1
+     * @param {number} r2
+     * @param {number} g2
+     * @param {number} b2
+     */
+    apply_duotone(r1, g1, b1, r2, g2, b2) {
+        wasm.imageprocessor_apply_duotone(this.__wbg_ptr, r1, g1, b1, r2, g2, b2);
+    }
     apply_grayscale() {
         wasm.imageprocessor_apply_grayscale(this.__wbg_ptr);
+    }
+    apply_halftone() {
+        wasm.imageprocessor_apply_halftone(this.__wbg_ptr);
     }
     /**
      * @param {number} level
@@ -52,6 +72,27 @@ export class ImageProcessor {
         wasm.imageprocessor_apply_invert(this.__wbg_ptr);
     }
     /**
+     * @param {number} radius
+     * @param {number} intensity
+     */
+    apply_oil(radius, intensity) {
+        wasm.imageprocessor_apply_oil(this.__wbg_ptr, radius, intensity);
+    }
+    /**
+     * @param {number} pixel_size
+     */
+    apply_pixelate(pixel_size) {
+        wasm.imageprocessor_apply_pixelate(this.__wbg_ptr, pixel_size);
+    }
+    /**
+     * @param {string} filter_name
+     */
+    apply_preset_filter(filter_name) {
+        const ptr0 = passStringToWasm0(filter_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_apply_preset_filter(this.__wbg_ptr, ptr0, len0);
+    }
+    /**
      * @param {number} level
      */
     apply_saturation(level) {
@@ -60,11 +101,29 @@ export class ImageProcessor {
     apply_sepia() {
         wasm.imageprocessor_apply_sepia(this.__wbg_ptr);
     }
+    apply_solarize() {
+        wasm.imageprocessor_apply_solarize(this.__wbg_ptr);
+    }
     /**
      * @param {number} threshold
      */
     apply_threshold(threshold) {
         wasm.imageprocessor_apply_threshold(this.__wbg_ptr, threshold);
+    }
+    /**
+     * @param {number} x1
+     * @param {number} y1
+     * @param {number} x2
+     * @param {number} y2
+     */
+    crop(x1, y1, x2, y2) {
+        wasm.imageprocessor_crop(this.__wbg_ptr, x1, y1, x2, y2);
+    }
+    flip_horizontal() {
+        wasm.imageprocessor_flip_horizontal(this.__wbg_ptr);
+    }
+    flip_vertical() {
+        wasm.imageprocessor_flip_vertical(this.__wbg_ptr);
     }
     /**
      * @returns {Uint8Array}
@@ -120,6 +179,16 @@ export class ImageProcessor {
     }
     reset() {
         wasm.imageprocessor_reset(this.__wbg_ptr);
+    }
+    /**
+     * @param {number} new_width
+     * @param {number} new_height
+     */
+    resize(new_width, new_height) {
+        wasm.imageprocessor_resize(this.__wbg_ptr, new_width, new_height);
+    }
+    rotate_90() {
+        wasm.imageprocessor_rotate_90(this.__wbg_ptr);
     }
     /**
      * @returns {string}
