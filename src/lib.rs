@@ -392,6 +392,30 @@ impl ImageProcessor {
         self.height = self.image.get_height();
     }
 
+    /// 任意角度旋转
+    /// angle: 旋转角度（度），支持 -360 到 360
+    pub fn rotate_any(&mut self, angle: f32) {
+        // 对于 90 度倍数，使用快速路径
+        if angle.abs() % 90.0 < 0.01 {
+            let right_angle_count = ((angle.abs() as i32) / 90) % 4;
+            let is_negative = angle < 0.0;
+            
+            for _ in 0..right_angle_count {
+                if is_negative {
+                    // 逆时针旋转 = 顺时针旋转 270 度 = 3 次 90 度
+                    self.image = transform::rotate(&self.image, -90.0);
+                } else {
+                    self.image = transform::rotate(&self.image, 90.0);
+                }
+            }
+        } else {
+            // 对于任意角度，使用三次剪切变换
+            self.image = transform::rotate(&self.image, angle);
+        }
+        self.width = self.image.get_width();
+        self.height = self.image.get_height();
+    }
+
     pub fn flip_horizontal(&mut self) {
         transform::fliph(&mut self.image);
     }
@@ -663,6 +687,119 @@ impl ImageProcessor {
         }
         
         photon_rs::multiple::watermark(&mut self.image, &watermark, x, y);
+    }
+
+    // 水印功能（带混合模式）
+    pub fn apply_watermark_with_blend(&mut self, watermark_bytes: &[u8], x: i64, y: i64, scale: f32, blend_mode: &str) {
+        let mut watermark = native::open_image_from_bytes(watermark_bytes)
+            .expect("Failed to open watermark image");
+        
+        // 调整水印大小以适应主图像（blend 函数要求水印必须小于主图像）
+        let mut final_watermark = if watermark.get_width() > self.width || watermark.get_height() > self.height {
+            // 计算缩放比例，确保水印不超过主图像
+            let max_scale = (self.width as f32 / watermark.get_width() as f32)
+                .min(self.height as f32 / watermark.get_height() as f32);
+            let actual_scale = scale.min(max_scale);
+            let new_width = (watermark.get_width() as f32 * actual_scale) as u32;
+            let new_height = (watermark.get_height() as f32 * actual_scale) as u32;
+            transform::resize(&watermark, new_width, new_height, transform::SamplingFilter::Lanczos3)
+        } else {
+            // 如果水印小于主图像，根据 scale 参数调整大小
+            if scale != 1.0 {
+                let new_width = (watermark.get_width() as f32 * scale) as u32;
+                let new_height = (watermark.get_height() as f32 * scale) as u32;
+                transform::resize(&watermark, new_width, new_height, transform::SamplingFilter::Lanczos3)
+            } else {
+                watermark
+            }
+        };
+        
+        // 创建一个临时图像，用于将水印放置在指定位置
+        let mut temp_image = self.image.clone();
+        
+        // 将水印叠加到指定位置
+        photon_rs::multiple::watermark(&mut temp_image, &final_watermark, x, y);
+        
+        // 使用混合模式将两个图像混合
+        photon_rs::multiple::blend(&mut self.image, &temp_image, blend_mode);
+    }
+
+    // 水印功能（完整版：支持混合模式、透明度、旋转）
+    pub fn apply_watermark_advanced(&mut self, watermark_bytes: &[u8], x: i64, y: i64, scale: f32, _blend_mode: &str, opacity: f32, rotation: f32) {
+        let watermark = native::open_image_from_bytes(watermark_bytes)
+            .expect("Failed to open watermark image");
+        
+        // 1. 应用旋转（如果需要）
+        let rotated_watermark = if rotation.abs() > 0.1 {
+            transform::rotate(&watermark, rotation)
+        } else {
+            watermark
+        };
+        
+        // 2. 应用透明度（调整 alpha 通道）
+        let final_watermark = if opacity < 0.9 {
+            let pixels = rotated_watermark.get_bytes();
+            let width = rotated_watermark.get_width();
+            let height = rotated_watermark.get_height();
+            
+            // 安全检查
+            if pixels.len() == 0 || width == 0 || height == 0 {
+                rotated_watermark
+            } else {
+                let mut result = Vec::with_capacity(pixels.len());
+                let opacity_safe = opacity.max(0.01).min(1.0);
+                
+                let pixel_count = (pixels.len() / 4) as usize;
+                for i in 0..pixel_count {
+                    let idx = i * 4;
+                    if idx + 3 < pixels.len() {
+                        result.push(pixels[idx]);
+                        result.push(pixels[idx + 1]);
+                        result.push(pixels[idx + 2]);
+                        let new_alpha = ((pixels[idx + 3] as f32) * opacity_safe) as u8;
+                        result.push(new_alpha);
+                    }
+                }
+                PhotonImage::new(result, width, height)
+            }
+        } else {
+            rotated_watermark
+        };
+        
+        // 3. 调整水印大小以适应主图像
+        let final_watermark = if final_watermark.get_width() > self.width || final_watermark.get_height() > self.height {
+            let max_scale = (self.width as f32 / final_watermark.get_width() as f32)
+                .min(self.height as f32 / final_watermark.get_height() as f32);
+            let actual_scale = scale.min(max_scale);
+            let new_width = (final_watermark.get_width() as f32 * actual_scale) as u32;
+            let new_height = (final_watermark.get_height() as f32 * actual_scale) as u32;
+            transform::resize(&final_watermark, new_width, new_height, transform::SamplingFilter::Lanczos3)
+        } else {
+            if scale.abs() > 1.05 || scale.abs() < 0.95 {
+                let new_width = (final_watermark.get_width() as f32 * scale) as u32;
+                let new_height = (final_watermark.get_height() as f32 * scale) as u32;
+                transform::resize(&final_watermark, new_width, new_height, transform::SamplingFilter::Lanczos3)
+            } else {
+                final_watermark
+            }
+        };
+        
+        // 4. 应用水印 - 从字节数据重建图像避免循环引用
+        let main_bytes = self.image.get_bytes();
+        let main_width = self.image.get_width();
+        let main_height = self.image.get_height();
+        
+        // 安全检查
+        if main_bytes.len() == 0 || main_width == 0 || main_height == 0 {
+            return;
+        }
+        
+        let mut temp_image = PhotonImage::new(main_bytes, main_width, main_height);
+        photon_rs::multiple::watermark(&mut temp_image, &final_watermark, x, y);
+        
+        // 完全重建 self.image
+        let result_bytes = temp_image.get_bytes();
+        self.image = PhotonImage::new(result_bytes, temp_image.get_width(), temp_image.get_height());
     }
 }
 
