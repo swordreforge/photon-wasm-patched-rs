@@ -649,6 +649,21 @@ impl ImageProcessor {
             .expect("Failed to open watermark image");
         photon_rs::multiple::watermark(&mut self.image, &watermark, x, y);
     }
+
+    // 水印功能（带缩放）
+    pub fn apply_watermark_with_scale(&mut self, watermark_bytes: &[u8], x: i64, y: i64, scale: f32) {
+        let mut watermark = native::open_image_from_bytes(watermark_bytes)
+            .expect("Failed to open watermark image");
+        
+        // 如果缩放比例不为1.0，调整水印大小
+        if scale != 1.0 {
+            let new_width = (watermark.get_width() as f32 * scale) as u32;
+            let new_height = (watermark.get_height() as f32 * scale) as u32;
+            watermark = transform::resize(&watermark, new_width, new_height, transform::SamplingFilter::Lanczos3);
+        }
+        
+        photon_rs::multiple::watermark(&mut self.image, &watermark, x, y);
+    }
 }
 
 #[wasm_bindgen(start)]

@@ -333,6 +333,17 @@ export class ImageProcessor {
         wasm.imageprocessor_apply_watermark(this.__wbg_ptr, ptr0, len0, x, y);
     }
     /**
+     * @param {Uint8Array} watermark_bytes
+     * @param {bigint} x
+     * @param {bigint} y
+     * @param {number} scale
+     */
+    apply_watermark_with_scale(watermark_bytes, x, y, scale) {
+        const ptr0 = passArray8ToWasm0(watermark_bytes, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_apply_watermark_with_scale(this.__wbg_ptr, ptr0, len0, x, y, scale);
+    }
+    /**
      * @param {number} x1
      * @param {number} y1
      * @param {number} x2

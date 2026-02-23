@@ -81,6 +81,7 @@ export class ImageProcessor {
     apply_tint(r: number, g: number, b: number): void;
     apply_vertical_strips(num_strips: number): void;
     apply_watermark(watermark_bytes: Uint8Array, x: bigint, y: bigint): void;
+    apply_watermark_with_scale(watermark_bytes: Uint8Array, x: bigint, y: bigint, scale: number): void;
     crop(x1: number, y1: number, x2: number, y2: number): void;
     darken_hsl(level: number): void;
     desaturate_hsl(level: number): void;
@@ -3374,6 +3375,7 @@ export interface InitOutput {
     readonly imageprocessor_apply_tint: (a: number, b: number, c: number, d: number) => void;
     readonly imageprocessor_apply_vertical_strips: (a: number, b: number) => void;
     readonly imageprocessor_apply_watermark: (a: number, b: number, c: number, d: bigint, e: bigint) => void;
+    readonly imageprocessor_apply_watermark_with_scale: (a: number, b: number, c: number, d: bigint, e: bigint, f: number) => void;
     readonly imageprocessor_crop: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly imageprocessor_darken_hsl: (a: number, b: number) => void;
     readonly imageprocessor_desaturate_hsl: (a: number, b: number) => void;

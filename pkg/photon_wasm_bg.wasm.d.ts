@@ -59,6 +59,7 @@ export const imageprocessor_apply_threshold: (a: number, b: number) => void;
 export const imageprocessor_apply_tint: (a: number, b: number, c: number, d: number) => void;
 export const imageprocessor_apply_vertical_strips: (a: number, b: number) => void;
 export const imageprocessor_apply_watermark: (a: number, b: number, c: number, d: bigint, e: bigint) => void;
+export const imageprocessor_apply_watermark_with_scale: (a: number, b: number, c: number, d: bigint, e: bigint, f: number) => void;
 export const imageprocessor_crop: (a: number, b: number, c: number, d: number, e: number) => void;
 export const imageprocessor_darken_hsl: (a: number, b: number) => void;
 export const imageprocessor_desaturate_hsl: (a: number, b: number) => void;
