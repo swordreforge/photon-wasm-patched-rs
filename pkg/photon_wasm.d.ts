@@ -48,6 +48,7 @@ export class ImageProcessor {
     apply_frosted_glass(): void;
     apply_gamma(red: number, green: number, blue: number): void;
     apply_gaussian_blur(radius: number): void;
+    apply_gradient(): void;
     apply_grayscale(): void;
     apply_grayscale_human_corrected(): void;
     apply_grayscale_shades(num_shades: number): void;
@@ -55,9 +56,12 @@ export class ImageProcessor {
     apply_horizontal_strips(num_strips: number): void;
     apply_hue(level: number): void;
     apply_identity(): void;
+    apply_inc_brightness(brightness: number): void;
     apply_invert(): void;
     apply_laplace(): void;
     apply_lightness(level: number, color_space: string): void;
+    apply_lix(): void;
+    apply_neue(): void;
     apply_noise_reduction(strength: number): void;
     apply_normalize(): void;
     apply_oil(radius: number, intensity: number): void;
@@ -65,6 +69,7 @@ export class ImageProcessor {
     apply_preset_filter(filter_name: string): void;
     apply_prewitt_horizontal(): void;
     apply_primary(): void;
+    apply_ryo(): void;
     apply_saturation(level: number): void;
     apply_sepia(): void;
     apply_sharpen(strength: number): void;
@@ -3337,6 +3342,7 @@ export interface InitOutput {
     readonly imageprocessor_apply_frosted_glass: (a: number) => void;
     readonly imageprocessor_apply_gamma: (a: number, b: number, c: number, d: number) => void;
     readonly imageprocessor_apply_gaussian_blur: (a: number, b: number) => void;
+    readonly imageprocessor_apply_gradient: (a: number) => void;
     readonly imageprocessor_apply_grayscale: (a: number) => void;
     readonly imageprocessor_apply_grayscale_human_corrected: (a: number) => void;
     readonly imageprocessor_apply_grayscale_shades: (a: number, b: number) => void;
@@ -3344,15 +3350,19 @@ export interface InitOutput {
     readonly imageprocessor_apply_horizontal_strips: (a: number, b: number) => void;
     readonly imageprocessor_apply_hue: (a: number, b: number) => void;
     readonly imageprocessor_apply_identity: (a: number) => void;
+    readonly imageprocessor_apply_inc_brightness: (a: number, b: number) => void;
     readonly imageprocessor_apply_invert: (a: number) => void;
     readonly imageprocessor_apply_laplace: (a: number) => void;
     readonly imageprocessor_apply_lightness: (a: number, b: number, c: number, d: number) => void;
+    readonly imageprocessor_apply_lix: (a: number) => void;
+    readonly imageprocessor_apply_neue: (a: number) => void;
     readonly imageprocessor_apply_noise_reduction: (a: number, b: number) => void;
     readonly imageprocessor_apply_normalize: (a: number) => void;
     readonly imageprocessor_apply_oil: (a: number, b: number, c: number) => void;
     readonly imageprocessor_apply_pixelate: (a: number, b: number) => void;
     readonly imageprocessor_apply_preset_filter: (a: number, b: number, c: number) => void;
     readonly imageprocessor_apply_primary: (a: number) => void;
+    readonly imageprocessor_apply_ryo: (a: number) => void;
     readonly imageprocessor_apply_saturation: (a: number, b: number) => void;
     readonly imageprocessor_apply_sepia: (a: number) => void;
     readonly imageprocessor_apply_sharpen: (a: number, b: number) => void;

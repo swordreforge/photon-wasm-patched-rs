@@ -620,6 +620,28 @@ impl ImageProcessor {
     pub fn desaturate_hsl(&mut self, level: f32) {
         colour_spaces::desaturate_hsl(&mut self.image, level);
     }
+
+    // ==================== Effects（特效）====================
+
+    pub fn apply_lix(&mut self) {
+        filters::lix(&mut self.image);
+    }
+
+    pub fn apply_neue(&mut self) {
+        filters::neue(&mut self.image);
+    }
+
+    pub fn apply_ryo(&mut self) {
+        filters::ryo(&mut self.image);
+    }
+
+    pub fn apply_inc_brightness(&mut self, brightness: u8) {
+        effects::inc_brightness(&mut self.image, brightness);
+    }
+
+    pub fn apply_gradient(&mut self) {
+        photon_rs::multiple::apply_gradient(&mut self.image);
+    }
 }
 
 #[wasm_bindgen(start)]

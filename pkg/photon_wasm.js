@@ -176,6 +176,9 @@ export class ImageProcessor {
     apply_gaussian_blur(radius) {
         wasm.imageprocessor_apply_gaussian_blur(this.__wbg_ptr, radius);
     }
+    apply_gradient() {
+        wasm.imageprocessor_apply_gradient(this.__wbg_ptr);
+    }
     apply_grayscale() {
         wasm.imageprocessor_apply_grayscale(this.__wbg_ptr);
     }
@@ -206,6 +209,12 @@ export class ImageProcessor {
     apply_identity() {
         wasm.imageprocessor_apply_identity(this.__wbg_ptr);
     }
+    /**
+     * @param {number} brightness
+     */
+    apply_inc_brightness(brightness) {
+        wasm.imageprocessor_apply_inc_brightness(this.__wbg_ptr, brightness);
+    }
     apply_invert() {
         wasm.imageprocessor_apply_invert(this.__wbg_ptr);
     }
@@ -220,6 +229,12 @@ export class ImageProcessor {
         const ptr0 = passStringToWasm0(color_space, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len0 = WASM_VECTOR_LEN;
         wasm.imageprocessor_apply_lightness(this.__wbg_ptr, level, ptr0, len0);
+    }
+    apply_lix() {
+        wasm.imageprocessor_apply_lix(this.__wbg_ptr);
+    }
+    apply_neue() {
+        wasm.imageprocessor_apply_neue(this.__wbg_ptr);
     }
     /**
      * @param {number} strength
@@ -256,6 +271,9 @@ export class ImageProcessor {
     }
     apply_primary() {
         wasm.imageprocessor_apply_primary(this.__wbg_ptr);
+    }
+    apply_ryo() {
+        wasm.imageprocessor_apply_ryo(this.__wbg_ptr);
     }
     /**
      * @param {number} level
