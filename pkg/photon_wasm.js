@@ -6,17 +6,17 @@
  */
 export const FontType = Object.freeze({
     /**
-     * Roboto 常规字体（默认）
+     * 丁卯点阵体（默认，较小字体）
      */
-    RobotoRegular: 0, "0": "RobotoRegular",
+    DingMaoDianZhen: 0, "0": "DingMaoDianZhen",
     /**
-     * 阿里普惠体 常规
+     * Roboto 常规字体
      */
-    AlibabaRegular: 1, "1": "AlibabaRegular",
+    RobotoRegular: 1, "1": "RobotoRegular",
     /**
-     * 鸿雷小纸条青春体
+     * 站酷高端黑（较大字体）
      */
-    HongLeiXiaoZhiTiao: 2, "2": "HongLeiXiaoZhiTiao",
+    ZzgfDianHei: 2, "2": "ZzgfDianHei",
 });
 
 export class ImageProcessor {

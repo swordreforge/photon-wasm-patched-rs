@@ -6,17 +6,17 @@
  */
 export enum FontType {
     /**
-     * Roboto 常规字体（默认）
+     * 丁卯点阵体（默认，较小字体）
      */
-    RobotoRegular = 0,
+    DingMaoDianZhen = 0,
     /**
-     * 阿里普惠体 常规
+     * Roboto 常规字体
      */
-    AlibabaRegular = 1,
+    RobotoRegular = 1,
     /**
-     * 鸿雷小纸条青春体
+     * 站酷高端黑（较大字体）
      */
-    HongLeiXiaoZhiTiao = 2,
+    ZzgfDianHei = 2,
 }
 
 export class ImageProcessor {

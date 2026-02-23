@@ -18,21 +18,21 @@ use wasm_bindgen::prelude::*;
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FontType {
-    /// Roboto 常规字体（默认）
-    RobotoRegular = 0,
-    /// 阿里普惠体 常规
-    AlibabaRegular = 1,
-    /// 鸿雷小纸条青春体
-    HongLeiXiaoZhiTiao = 2,
+    /// 丁卯点阵体（默认，较小字体）
+    DingMaoDianZhen = 0,
+    /// Roboto 常规字体
+    RobotoRegular = 1,
+    /// 站酷高端黑（较大字体）
+    ZzgfDianHei = 2,
 }
 
 /// 根据字体类型加载字体
-/// 默认使用 Roboto-Regular.ttf
+/// 默认使用丁卯点阵体
 fn load_font(font_type: FontType) -> Font<'static> {
     let font_vec: Vec<u8> = match font_type {
+        FontType::DingMaoDianZhen => include_bytes!("../fonts/丁卯点阵体.ttf").to_vec(),
         FontType::RobotoRegular => include_bytes!("../fonts/Roboto-Regular.ttf").to_vec(),
-        FontType::AlibabaRegular => include_bytes!("../fonts/AlibabaPuHuiTi-3-55-Regular.ttf").to_vec(),
-        FontType::HongLeiXiaoZhiTiao => include_bytes!("../fonts/鸿雷小纸条青春体.ttf").to_vec(),
+        FontType::ZzgfDianHei => include_bytes!("../fonts/zzgf_dianhei.ttf").to_vec(),
     };
     // 使用 Box::leak 将数据泄漏到静态生命周期
     let font_static: &'static [u8] = Box::leak(font_vec.into_boxed_slice());
@@ -69,7 +69,7 @@ pub fn draw_text_with_border(
     y: i32,
     font_size: f32,
 ) {
-    draw_text_with_border_with_font(photon_img, text, x, y, font_size, FontType::RobotoRegular);
+    draw_text_with_border_with_font(photon_img, text, x, y, font_size, FontType::DingMaoDianZhen);
 }
 
 /// Add bordered-text to an image with specified font type.
@@ -157,7 +157,7 @@ pub fn draw_text(
     y: i32,
     font_size: f32,
 ) {
-    draw_text_with_font(photon_img, text, x, y, font_size, FontType::RobotoRegular);
+    draw_text_with_font(photon_img, text, x, y, font_size, FontType::DingMaoDianZhen);
 }
 
 /// Add text to an image with specified font type.
@@ -225,7 +225,7 @@ pub fn draw_text_with_color(
     g: u8,
     b: u8,
 ) {
-    draw_text_with_color_and_font(photon_img, text, x, y, font_size, r, g, b, FontType::RobotoRegular);
+    draw_text_with_color_and_font(photon_img, text, x, y, font_size, r, g, b, FontType::DingMaoDianZhen);
 }
 
 /// Add text to an image with custom color and specified font type.
@@ -296,7 +296,7 @@ pub fn draw_text_with_border_and_color(
     g: u8,
     b: u8,
 ) {
-    draw_text_with_border_and_color_and_font(photon_img, text, x, y, font_size, r, g, b, FontType::RobotoRegular);
+    draw_text_with_border_and_color_and_font(photon_img, text, x, y, font_size, r, g, b, FontType::DingMaoDianZhen);
 }
 
 /// Add bordered-text to an image with custom color and specified font type.

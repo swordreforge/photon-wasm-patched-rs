@@ -82,9 +82,10 @@ impl ImageProcessor {
     /// font_type: 0-2, 对应不同的字体
     pub fn draw_text_with_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, font_type: u8) {
         let ft = match font_type {
-            1 => text::FontType::AlibabaRegular,
-            2 => text::FontType::HongLeiXiaoZhiTiao,
-            _ => text::FontType::RobotoRegular,
+            0 => text::FontType::DingMaoDianZhen,
+            1 => text::FontType::RobotoRegular,
+            2 => text::FontType::ZzgfDianHei,
+            _ => text::FontType::DingMaoDianZhen,
         };
         text::draw_text_with_font(&mut self.image, text, x, y, font_size, ft);
     }
@@ -97,9 +98,10 @@ impl ImageProcessor {
     /// font_type: 0-2, 对应不同的字体
     pub fn draw_text_with_shadow_and_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, font_type: u8) {
         let ft = match font_type {
-            1 => text::FontType::AlibabaRegular,
-            2 => text::FontType::HongLeiXiaoZhiTiao,
-            _ => text::FontType::RobotoRegular,
+            0 => text::FontType::DingMaoDianZhen,
+            1 => text::FontType::RobotoRegular,
+            2 => text::FontType::ZzgfDianHei,
+            _ => text::FontType::DingMaoDianZhen,
         };
         text::draw_text_with_border_with_font(&mut self.image, text, x, y, font_size, ft);
     }
@@ -112,9 +114,10 @@ impl ImageProcessor {
     /// font_type: 0-2, 对应不同的字体
     pub fn draw_text_with_color_and_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, r: u8, g: u8, b: u8, font_type: u8) {
         let ft = match font_type {
-            1 => text::FontType::AlibabaRegular,
-            2 => text::FontType::HongLeiXiaoZhiTiao,
-            _ => text::FontType::RobotoRegular,
+            0 => text::FontType::DingMaoDianZhen,
+            1 => text::FontType::RobotoRegular,
+            2 => text::FontType::ZzgfDianHei,
+            _ => text::FontType::DingMaoDianZhen,
         };
         text::draw_text_with_color_and_font(&mut self.image, text, x, y, font_size, r, g, b, ft);
     }
@@ -127,9 +130,10 @@ impl ImageProcessor {
     /// font_type: 0-2, 对应不同的字体
     pub fn draw_text_with_shadow_and_color_and_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, r: u8, g: u8, b: u8, font_type: u8) {
         let ft = match font_type {
-            1 => text::FontType::AlibabaRegular,
-            2 => text::FontType::HongLeiXiaoZhiTiao,
-            _ => text::FontType::RobotoRegular,
+            0 => text::FontType::DingMaoDianZhen,
+            1 => text::FontType::RobotoRegular,
+            2 => text::FontType::ZzgfDianHei,
+            _ => text::FontType::DingMaoDianZhen,
         };
         text::draw_text_with_border_and_color_and_font(&mut self.image, text, x, y, font_size, r, g, b, ft);
     }
