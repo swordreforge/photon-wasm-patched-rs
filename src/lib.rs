@@ -642,6 +642,13 @@ impl ImageProcessor {
     pub fn apply_gradient(&mut self) {
         photon_rs::multiple::apply_gradient(&mut self.image);
     }
+
+    // 水印功能
+    pub fn apply_watermark(&mut self, watermark_bytes: &[u8], x: i64, y: i64) {
+        let watermark = native::open_image_from_bytes(watermark_bytes)
+            .expect("Failed to open watermark image");
+        photon_rs::multiple::watermark(&mut self.image, &watermark, x, y);
+    }
 }
 
 #[wasm_bindgen(start)]

@@ -323,6 +323,16 @@ export class ImageProcessor {
         wasm.imageprocessor_apply_vertical_strips(this.__wbg_ptr, num_strips);
     }
     /**
+     * @param {Uint8Array} watermark_bytes
+     * @param {bigint} x
+     * @param {bigint} y
+     */
+    apply_watermark(watermark_bytes, x, y) {
+        const ptr0 = passArray8ToWasm0(watermark_bytes, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_apply_watermark(this.__wbg_ptr, ptr0, len0, x, y);
+    }
+    /**
      * @param {number} x1
      * @param {number} y1
      * @param {number} x2
