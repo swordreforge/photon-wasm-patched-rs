@@ -552,6 +552,74 @@ impl ImageProcessor {
     pub fn apply_normalize(&mut self) {
         effects::normalize(&mut self.image);
     }
+
+    // ==================== Channels（通道操作）====================
+
+    pub fn alter_red_channel(&mut self, amt: i16) {
+        photon_rs::channels::alter_red_channel(&mut self.image, amt);
+    }
+
+    pub fn alter_green_channel(&mut self, amt: i16) {
+        photon_rs::channels::alter_green_channel(&mut self.image, amt);
+    }
+
+    pub fn alter_blue_channel(&mut self, amt: i16) {
+        photon_rs::channels::alter_blue_channel(&mut self.image, amt);
+    }
+
+    pub fn remove_red_channel(&mut self) {
+        photon_rs::channels::remove_red_channel(&mut self.image, 0);
+    }
+
+    pub fn remove_green_channel(&mut self) {
+        photon_rs::channels::remove_green_channel(&mut self.image, 0);
+    }
+
+    pub fn remove_blue_channel(&mut self) {
+        photon_rs::channels::remove_blue_channel(&mut self.image, 0);
+    }
+
+    pub fn swap_rg_channels(&mut self) {
+        photon_rs::channels::swap_channels(&mut self.image, 0, 1);
+    }
+
+    pub fn swap_gb_channels(&mut self) {
+        photon_rs::channels::swap_channels(&mut self.image, 1, 2);
+    }
+
+    pub fn swap_rb_channels(&mut self) {
+        photon_rs::channels::swap_channels(&mut self.image, 0, 2);
+    }
+
+    // ==================== Colour Spaces（色彩空间）====================
+
+    pub fn hue_rotate_hsl(&mut self, degrees: f32) {
+        colour_spaces::hue_rotate_hsl(&mut self.image, degrees);
+    }
+
+    pub fn hue_rotate_hsv(&mut self, degrees: f32) {
+        colour_spaces::hue_rotate_hsv(&mut self.image, degrees);
+    }
+
+    pub fn hue_rotate_lch(&mut self, degrees: f32) {
+        colour_spaces::hue_rotate_lch(&mut self.image, degrees);
+    }
+
+    pub fn lighten_hsl(&mut self, level: f32) {
+        colour_spaces::lighten_hsl(&mut self.image, level);
+    }
+
+    pub fn darken_hsl(&mut self, level: f32) {
+        colour_spaces::darken_hsl(&mut self.image, level);
+    }
+
+    pub fn saturate_hsl(&mut self, level: f32) {
+        colour_spaces::saturate_hsl(&mut self.image, level);
+    }
+
+    pub fn desaturate_hsl(&mut self, level: f32) {
+        colour_spaces::desaturate_hsl(&mut self.image, level);
+    }
 }
 
 #[wasm_bindgen(start)]

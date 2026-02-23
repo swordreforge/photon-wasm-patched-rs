@@ -38,6 +38,24 @@ export class ImageProcessor {
         wasm.__wbg_imageprocessor_free(ptr, 0);
     }
     /**
+     * @param {number} amt
+     */
+    alter_blue_channel(amt) {
+        wasm.imageprocessor_alter_blue_channel(this.__wbg_ptr, amt);
+    }
+    /**
+     * @param {number} amt
+     */
+    alter_green_channel(amt) {
+        wasm.imageprocessor_alter_green_channel(this.__wbg_ptr, amt);
+    }
+    /**
+     * @param {number} amt
+     */
+    alter_red_channel(amt) {
+        wasm.imageprocessor_alter_red_channel(this.__wbg_ptr, amt);
+    }
+    /**
      * @param {number} brightness
      * @param {number} contrast
      * @param {number} saturation
@@ -296,6 +314,18 @@ export class ImageProcessor {
         wasm.imageprocessor_crop(this.__wbg_ptr, x1, y1, x2, y2);
     }
     /**
+     * @param {number} level
+     */
+    darken_hsl(level) {
+        wasm.imageprocessor_darken_hsl(this.__wbg_ptr, level);
+    }
+    /**
+     * @param {number} level
+     */
+    desaturate_hsl(level) {
+        wasm.imageprocessor_desaturate_hsl(this.__wbg_ptr, level);
+    }
+    /**
      * @param {string} text
      * @param {number} x
      * @param {number} y
@@ -451,6 +481,30 @@ export class ImageProcessor {
         return ret >>> 0;
     }
     /**
+     * @param {number} degrees
+     */
+    hue_rotate_hsl(degrees) {
+        wasm.imageprocessor_hue_rotate_hsl(this.__wbg_ptr, degrees);
+    }
+    /**
+     * @param {number} degrees
+     */
+    hue_rotate_hsv(degrees) {
+        wasm.imageprocessor_hue_rotate_hsv(this.__wbg_ptr, degrees);
+    }
+    /**
+     * @param {number} degrees
+     */
+    hue_rotate_lch(degrees) {
+        wasm.imageprocessor_hue_rotate_lch(this.__wbg_ptr, degrees);
+    }
+    /**
+     * @param {number} level
+     */
+    lighten_hsl(level) {
+        wasm.imageprocessor_lighten_hsl(this.__wbg_ptr, level);
+    }
+    /**
      * @param {number} width
      * @param {number} height
      * @param {Uint8Array} data
@@ -513,6 +567,15 @@ export class ImageProcessor {
     offset_red(offset_amt) {
         wasm.imageprocessor_offset_red(this.__wbg_ptr, offset_amt);
     }
+    remove_blue_channel() {
+        wasm.imageprocessor_remove_blue_channel(this.__wbg_ptr);
+    }
+    remove_green_channel() {
+        wasm.imageprocessor_remove_green_channel(this.__wbg_ptr);
+    }
+    remove_red_channel() {
+        wasm.imageprocessor_remove_red_channel(this.__wbg_ptr);
+    }
     reset() {
         wasm.imageprocessor_reset(this.__wbg_ptr);
     }
@@ -525,6 +588,21 @@ export class ImageProcessor {
     }
     rotate_90() {
         wasm.imageprocessor_rotate_90(this.__wbg_ptr);
+    }
+    /**
+     * @param {number} level
+     */
+    saturate_hsl(level) {
+        wasm.imageprocessor_saturate_hsl(this.__wbg_ptr, level);
+    }
+    swap_gb_channels() {
+        wasm.imageprocessor_swap_gb_channels(this.__wbg_ptr);
+    }
+    swap_rb_channels() {
+        wasm.imageprocessor_swap_rb_channels(this.__wbg_ptr);
+    }
+    swap_rg_channels() {
+        wasm.imageprocessor_swap_rg_channels(this.__wbg_ptr);
     }
     /**
      * @returns {string}

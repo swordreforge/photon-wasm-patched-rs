@@ -22,6 +22,9 @@ export enum FontType {
 export class ImageProcessor {
     free(): void;
     [Symbol.dispose](): void;
+    alter_blue_channel(amt: number): void;
+    alter_green_channel(amt: number): void;
+    alter_red_channel(amt: number): void;
     apply_all_adjustments(brightness: number, contrast: number, saturation: number, hue: number, lightness: number, lightness_color_space: string, gamma_red: number, gamma_green: number, gamma_blue: number, sharpen_strength: number, noise_reduction_strength: number): void;
     apply_b_grayscale(): void;
     apply_box_blur(): void;
@@ -73,6 +76,8 @@ export class ImageProcessor {
     apply_tint(r: number, g: number, b: number): void;
     apply_vertical_strips(num_strips: number): void;
     crop(x1: number, y1: number, x2: number, y2: number): void;
+    darken_hsl(level: number): void;
+    desaturate_hsl(level: number): void;
     draw_text(text: string, x: number, y: number, font_size: number): void;
     draw_text_with_color(text: string, x: number, y: number, font_size: number, r: number, g: number, b: number): void;
     /**
@@ -103,14 +108,25 @@ export class ImageProcessor {
     get_estimated_filesize(): bigint;
     get_height(): number;
     get_width(): number;
+    hue_rotate_hsl(degrees: number): void;
+    hue_rotate_hsv(degrees: number): void;
+    hue_rotate_lch(degrees: number): void;
+    lighten_hsl(level: number): void;
     constructor(width: number, height: number, data: Uint8Array);
     static new_from_bytes(bytes: Uint8Array): ImageProcessor;
     offset_blue(offset_amt: number): void;
     offset_green(offset_amt: number): void;
     offset_red(offset_amt: number): void;
+    remove_blue_channel(): void;
+    remove_green_channel(): void;
+    remove_red_channel(): void;
     reset(): void;
     resize(new_width: number, new_height: number): void;
     rotate_90(): void;
+    saturate_hsl(level: number): void;
+    swap_gb_channels(): void;
+    swap_rb_channels(): void;
+    swap_rg_channels(): void;
     to_base64(): string;
     to_jpeg(quality: number): string;
     to_png(): string;
@@ -3295,6 +3311,9 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_imageprocessor_free: (a: number, b: number) => void;
+    readonly imageprocessor_alter_blue_channel: (a: number, b: number) => void;
+    readonly imageprocessor_alter_green_channel: (a: number, b: number) => void;
+    readonly imageprocessor_alter_red_channel: (a: number, b: number) => void;
     readonly imageprocessor_apply_all_adjustments: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number, l: number, m: number) => void;
     readonly imageprocessor_apply_b_grayscale: (a: number) => void;
     readonly imageprocessor_apply_box_blur: (a: number) => void;
@@ -3344,6 +3363,8 @@ export interface InitOutput {
     readonly imageprocessor_apply_tint: (a: number, b: number, c: number, d: number) => void;
     readonly imageprocessor_apply_vertical_strips: (a: number, b: number) => void;
     readonly imageprocessor_crop: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly imageprocessor_darken_hsl: (a: number, b: number) => void;
+    readonly imageprocessor_desaturate_hsl: (a: number, b: number) => void;
     readonly imageprocessor_draw_text: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
     readonly imageprocessor_draw_text_with_color: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => void;
     readonly imageprocessor_draw_text_with_color_and_font: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => void;
@@ -3358,14 +3379,25 @@ export interface InitOutput {
     readonly imageprocessor_get_estimated_filesize: (a: number) => bigint;
     readonly imageprocessor_get_height: (a: number) => number;
     readonly imageprocessor_get_width: (a: number) => number;
+    readonly imageprocessor_hue_rotate_hsl: (a: number, b: number) => void;
+    readonly imageprocessor_hue_rotate_hsv: (a: number, b: number) => void;
+    readonly imageprocessor_hue_rotate_lch: (a: number, b: number) => void;
+    readonly imageprocessor_lighten_hsl: (a: number, b: number) => void;
     readonly imageprocessor_new: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly imageprocessor_new_from_bytes: (a: number, b: number, c: number) => void;
     readonly imageprocessor_offset_blue: (a: number, b: number) => void;
     readonly imageprocessor_offset_green: (a: number, b: number) => void;
     readonly imageprocessor_offset_red: (a: number, b: number) => void;
+    readonly imageprocessor_remove_blue_channel: (a: number) => void;
+    readonly imageprocessor_remove_green_channel: (a: number) => void;
+    readonly imageprocessor_remove_red_channel: (a: number) => void;
     readonly imageprocessor_reset: (a: number) => void;
     readonly imageprocessor_resize: (a: number, b: number, c: number) => void;
     readonly imageprocessor_rotate_90: (a: number) => void;
+    readonly imageprocessor_saturate_hsl: (a: number, b: number) => void;
+    readonly imageprocessor_swap_gb_channels: (a: number) => void;
+    readonly imageprocessor_swap_rb_channels: (a: number) => void;
+    readonly imageprocessor_swap_rg_channels: (a: number) => void;
     readonly imageprocessor_to_base64: (a: number, b: number) => void;
     readonly imageprocessor_to_jpeg: (a: number, b: number, c: number) => void;
     readonly imageprocessor_to_png: (a: number, b: number) => void;
