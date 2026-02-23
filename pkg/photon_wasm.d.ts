@@ -30,6 +30,7 @@ export class ImageProcessor {
     apply_box_blur(): void;
     apply_brightness(level: number): void;
     apply_color_horizontal_strips(num_strips: number, r: number, g: number, b: number): void;
+    apply_color_noise_with_strength(r_factor: number, g_factor: number, b_factor: number, strength: number): void;
     apply_color_vertical_strips(num_strips: number, r: number, g: number, b: number): void;
     apply_colorize(): void;
     apply_contrast(level: number): void;
@@ -62,9 +63,11 @@ export class ImageProcessor {
     apply_lightness(level: number, color_space: string): void;
     apply_lix(): void;
     apply_neue(): void;
+    apply_noise(strength: number): void;
     apply_noise_reduction(strength: number): void;
     apply_normalize(): void;
     apply_oil(radius: number, intensity: number): void;
+    apply_pink_noise(): void;
     apply_pixelate(pixel_size: number): void;
     apply_preset_filter(filter_name: string): void;
     apply_prewitt_horizontal(): void;
@@ -3333,6 +3336,7 @@ export interface InitOutput {
     readonly imageprocessor_apply_box_blur: (a: number) => void;
     readonly imageprocessor_apply_brightness: (a: number, b: number) => void;
     readonly imageprocessor_apply_color_horizontal_strips: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly imageprocessor_apply_color_noise_with_strength: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly imageprocessor_apply_color_vertical_strips: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly imageprocessor_apply_colorize: (a: number) => void;
     readonly imageprocessor_apply_contrast: (a: number, b: number) => void;
@@ -3365,9 +3369,11 @@ export interface InitOutput {
     readonly imageprocessor_apply_lightness: (a: number, b: number, c: number, d: number) => void;
     readonly imageprocessor_apply_lix: (a: number) => void;
     readonly imageprocessor_apply_neue: (a: number) => void;
+    readonly imageprocessor_apply_noise: (a: number, b: number) => void;
     readonly imageprocessor_apply_noise_reduction: (a: number, b: number) => void;
     readonly imageprocessor_apply_normalize: (a: number) => void;
     readonly imageprocessor_apply_oil: (a: number, b: number, c: number) => void;
+    readonly imageprocessor_apply_pink_noise: (a: number) => void;
     readonly imageprocessor_apply_pixelate: (a: number, b: number) => void;
     readonly imageprocessor_apply_preset_filter: (a: number, b: number, c: number) => void;
     readonly imageprocessor_apply_primary: (a: number) => void;

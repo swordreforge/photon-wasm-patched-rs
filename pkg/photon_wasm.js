@@ -95,6 +95,15 @@ export class ImageProcessor {
         wasm.imageprocessor_apply_color_horizontal_strips(this.__wbg_ptr, num_strips, r, g, b);
     }
     /**
+     * @param {number} r_factor
+     * @param {number} g_factor
+     * @param {number} b_factor
+     * @param {number} strength
+     */
+    apply_color_noise_with_strength(r_factor, g_factor, b_factor, strength) {
+        wasm.imageprocessor_apply_color_noise_with_strength(this.__wbg_ptr, r_factor, g_factor, b_factor, strength);
+    }
+    /**
      * @param {number} num_strips
      * @param {number} r
      * @param {number} g
@@ -239,6 +248,12 @@ export class ImageProcessor {
     /**
      * @param {number} strength
      */
+    apply_noise(strength) {
+        wasm.imageprocessor_apply_noise(this.__wbg_ptr, strength);
+    }
+    /**
+     * @param {number} strength
+     */
     apply_noise_reduction(strength) {
         wasm.imageprocessor_apply_noise_reduction(this.__wbg_ptr, strength);
     }
@@ -251,6 +266,9 @@ export class ImageProcessor {
      */
     apply_oil(radius, intensity) {
         wasm.imageprocessor_apply_oil(this.__wbg_ptr, radius, intensity);
+    }
+    apply_pink_noise() {
+        wasm.imageprocessor_apply_pink_noise(this.__wbg_ptr);
     }
     /**
      * @param {number} pixel_size

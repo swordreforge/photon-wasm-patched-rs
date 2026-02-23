@@ -1,6 +1,7 @@
 use wasm_bindgen::prelude::*;
 use photon_rs::{PhotonImage, filters, native, monochrome, transform, effects, colour_spaces, text};
 use base64::Engine;
+use image::{GenericImage, GenericImageView, Pixel};
 
 #[wasm_bindgen]
 pub struct ImageProcessor {
@@ -288,6 +289,70 @@ impl ImageProcessor {
         // strength 范围: 0.0 到 10.0
         let clamped_strength = strength.clamp(0.0, 10.0);
         photon_rs::conv::noise_reduction_with_strength(&mut self.image, clamped_strength);
+    }
+
+    // 噪点效果
+    pub fn apply_noise(&mut self, strength: f32) {
+        // strength 范围: 0.0 到 10.0
+        let clamped_strength = strength.clamp(0.0, 10.0);
+        photon_rs::noise::add_noise_rand_with_strength(&mut self.image, clamped_strength);
+    }
+
+    // 彩色噪点效果（自定义 RGB 系数）
+    pub fn apply_color_noise_with_strength(&mut self, r_factor: f32, g_factor: f32, b_factor: f32, strength: f32) {
+        // RGB 系数范围: 0.0 到 1.0
+        let r_factor = r_factor.clamp(0.0, 1.0);
+        let g_factor = g_factor.clamp(0.0, 1.0);
+        let b_factor = b_factor.clamp(0.0, 1.0);
+        
+        // strength 范围: 0.0 到 10.0
+        let strength = strength.clamp(0.0, 10.0);
+        
+        // 计算最大偏移量
+        let max_offset = (15.0 * strength) as u8;
+        
+        // 如果强度为 0，不需要添加噪点
+        if max_offset == 0 {
+            return;
+        }
+        
+        // 使用 photon-rs 的 helpers 模块来处理图像
+        let mut img = photon_rs::helpers::dyn_image_from_raw(&self.image);
+        
+        // 获取图像尺寸
+        let width = img.width();
+        let height = img.height();
+        
+        // 手动遍历每个像素
+        for y in 0..height {
+            for x in 0..width {
+                let mut px = img.get_pixel(x, y);
+                let channels = px.channels();
+                
+                // 为每个通道生成随机偏移
+                let r_offset = (js_sys::Math::random() * max_offset as f64) as u8;
+                let g_offset = (js_sys::Math::random() * max_offset as f64) as u8;
+                let b_offset = (js_sys::Math::random() * max_offset as f64) as u8;
+                
+                // 应用 RGB 系数和偏移
+                let new_r = (channels[0] as f32 + r_offset as f32 * r_factor).min(255.0) as u8;
+                let new_g = (channels[1] as f32 + g_offset as f32 * g_factor).min(255.0) as u8;
+                let new_b = (channels[2] as f32 + b_offset as f32 * b_factor).min(255.0) as u8;
+                let new_a = channels[3];
+                
+                // 创建新的像素
+                let new_px = image::Rgba([new_r, new_g, new_b, new_a]);
+                img.put_pixel(x, y, new_px);
+            }
+        }
+        
+        // 更新图像数据
+        self.image = photon_rs::PhotonImage::new(img.into_bytes(), self.width, self.height);
+    }
+
+    // 粉色噪点效果
+    pub fn apply_pink_noise(&mut self) {
+        photon_rs::noise::pink_noise(&mut self.image);
     }
 
     // 批量应用多个调节（避免重复重置）
