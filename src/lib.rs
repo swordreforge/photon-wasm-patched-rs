@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
-use photon_rs::{PhotonImage, filters, native, monochrome, transform, effects, colour_spaces, channels, text};
-use base64::{Engine, engine::general_purpose};
+use photon_rs::{PhotonImage, filters, native, monochrome, transform, effects, colour_spaces, text};
+use base64::Engine;
 
 #[wasm_bindgen]
 pub struct ImageProcessor {
@@ -410,6 +410,147 @@ impl ImageProcessor {
         self.image = transform::resize(&self.image, new_width, new_height, photon_rs::transform::SamplingFilter::Nearest);
         self.width = self.image.get_width();
         self.height = self.image.get_height();
+    }
+
+    // 单色效果
+    pub fn apply_b_grayscale(&mut self) {
+        monochrome::b_grayscale(&mut self.image);
+    }
+
+    pub fn apply_desaturate(&mut self) {
+        monochrome::desaturate(&mut self.image);
+    }
+
+    pub fn apply_decompose_max(&mut self) {
+        monochrome::decompose_max(&mut self.image);
+    }
+
+    pub fn apply_decompose_min(&mut self) {
+        monochrome::decompose_min(&mut self.image);
+    }
+
+    pub fn apply_grayscale_human_corrected(&mut self) {
+        monochrome::grayscale_human_corrected(&mut self.image);
+    }
+
+    pub fn apply_grayscale_shades(&mut self, num_shades: u8) {
+        monochrome::grayscale_shades(&mut self.image, num_shades);
+    }
+
+    // 模糊效果
+    pub fn apply_box_blur(&mut self) {
+        photon_rs::conv::box_blur(&mut self.image);
+    }
+
+    pub fn apply_gaussian_blur(&mut self, radius: i32) {
+        photon_rs::conv::gaussian_blur(&mut self.image, radius);
+    }
+
+    // 边缘检测
+    pub fn apply_sobel_horizontal(&mut self) {
+        photon_rs::conv::sobel_horizontal(&mut self.image);
+    }
+
+    pub fn apply_sobel_vertical(&mut self) {
+        photon_rs::conv::sobel_vertical(&mut self.image);
+    }
+
+    pub fn apply_sobel_global(&mut self) {
+        photon_rs::conv::edge_detection(&mut self.image);
+    }
+
+    pub fn apply_prewitt_horizontal(&mut self) {
+        photon_rs::conv::detect_horizontal_lines(&mut self.image);
+    }
+
+    // 卷积效果
+    pub fn apply_laplace(&mut self) {
+        photon_rs::conv::laplace(&mut self.image);
+    }
+
+    pub fn apply_emboss(&mut self) {
+        photon_rs::conv::emboss(&mut self.image);
+    }
+
+    pub fn apply_identity(&mut self) {
+        photon_rs::conv::identity(&mut self.image);
+    }
+
+    pub fn apply_edge_one(&mut self) {
+        photon_rs::conv::edge_one(&mut self.image);
+    }
+
+    pub fn apply_edge_detection(&mut self) {
+        photon_rs::conv::edge_detection(&mut self.image);
+    }
+
+    // 线条检测
+    pub fn apply_detect_horizontal_lines(&mut self) {
+        photon_rs::conv::detect_horizontal_lines(&mut self.image);
+    }
+
+    pub fn apply_detect_vertical_lines(&mut self) {
+        photon_rs::conv::detect_vertical_lines(&mut self.image);
+    }
+
+    pub fn apply_detect_45_deg_lines(&mut self) {
+        photon_rs::conv::detect_45_deg_lines(&mut self.image);
+    }
+
+    pub fn apply_detect_135_deg_lines(&mut self) {
+        photon_rs::conv::detect_135_deg_lines(&mut self.image);
+    }
+
+    // 特殊效果
+    pub fn apply_primary(&mut self) {
+        effects::primary(&mut self.image);
+    }
+
+    pub fn apply_colorize(&mut self) {
+        effects::colorize(&mut self.image);
+    }
+
+    pub fn apply_frosted_glass(&mut self) {
+        effects::frosted_glass(&mut self.image);
+    }
+
+    pub fn apply_tint(&mut self, r: u32, g: u32, b: u32) {
+        effects::tint(&mut self.image, r, g, b);
+    }
+
+    // 条纹效果
+    pub fn apply_horizontal_strips(&mut self, num_strips: u8) {
+        effects::horizontal_strips(&mut self.image, num_strips);
+    }
+
+    pub fn apply_vertical_strips(&mut self, num_strips: u8) {
+        effects::vertical_strips(&mut self.image, num_strips);
+    }
+
+    pub fn apply_color_horizontal_strips(&mut self, num_strips: u8, r: u8, g: u8, b: u8) {
+        effects::color_horizontal_strips(&mut self.image, num_strips, photon_rs::Rgb::new(r, g, b));
+    }
+
+    pub fn apply_color_vertical_strips(&mut self, num_strips: u8, r: u8, g: u8, b: u8) {
+        effects::color_vertical_strips(&mut self.image, num_strips, photon_rs::Rgb::new(r, g, b));
+    }
+
+    // 通道调整
+    pub fn offset_red(&mut self, offset_amt: u32) {
+        effects::offset_red(&mut self.image, offset_amt);
+    }
+
+    pub fn offset_green(&mut self, offset_amt: u32) {
+        effects::offset_green(&mut self.image, offset_amt);
+    }
+
+    pub fn offset_blue(&mut self, offset_amt: u32) {
+        effects::offset_blue(&mut self.image, offset_amt);
+    }
+
+    // 归一化
+    pub fn apply_normalize(&mut self) {
+        effects::normalize(&mut self.image);
     }
 }
 

@@ -55,6 +55,12 @@ export class ImageProcessor {
         const len0 = WASM_VECTOR_LEN;
         wasm.imageprocessor_apply_all_adjustments(this.__wbg_ptr, brightness, contrast, saturation, hue, lightness, ptr0, len0, gamma_red, gamma_green, gamma_blue, sharpen_strength, noise_reduction_strength);
     }
+    apply_b_grayscale() {
+        wasm.imageprocessor_apply_b_grayscale(this.__wbg_ptr);
+    }
+    apply_box_blur() {
+        wasm.imageprocessor_apply_box_blur(this.__wbg_ptr);
+    }
     /**
      * @param {number} level
      */
@@ -62,10 +68,52 @@ export class ImageProcessor {
         wasm.imageprocessor_apply_brightness(this.__wbg_ptr, level);
     }
     /**
+     * @param {number} num_strips
+     * @param {number} r
+     * @param {number} g
+     * @param {number} b
+     */
+    apply_color_horizontal_strips(num_strips, r, g, b) {
+        wasm.imageprocessor_apply_color_horizontal_strips(this.__wbg_ptr, num_strips, r, g, b);
+    }
+    /**
+     * @param {number} num_strips
+     * @param {number} r
+     * @param {number} g
+     * @param {number} b
+     */
+    apply_color_vertical_strips(num_strips, r, g, b) {
+        wasm.imageprocessor_apply_color_vertical_strips(this.__wbg_ptr, num_strips, r, g, b);
+    }
+    apply_colorize() {
+        wasm.imageprocessor_apply_colorize(this.__wbg_ptr);
+    }
+    /**
      * @param {number} level
      */
     apply_contrast(level) {
         wasm.imageprocessor_apply_contrast(this.__wbg_ptr, level);
+    }
+    apply_decompose_max() {
+        wasm.imageprocessor_apply_decompose_max(this.__wbg_ptr);
+    }
+    apply_decompose_min() {
+        wasm.imageprocessor_apply_decompose_min(this.__wbg_ptr);
+    }
+    apply_desaturate() {
+        wasm.imageprocessor_apply_desaturate(this.__wbg_ptr);
+    }
+    apply_detect_135_deg_lines() {
+        wasm.imageprocessor_apply_detect_135_deg_lines(this.__wbg_ptr);
+    }
+    apply_detect_45_deg_lines() {
+        wasm.imageprocessor_apply_detect_45_deg_lines(this.__wbg_ptr);
+    }
+    apply_detect_horizontal_lines() {
+        wasm.imageprocessor_apply_detect_horizontal_lines(this.__wbg_ptr);
+    }
+    apply_detect_vertical_lines() {
+        wasm.imageprocessor_apply_detect_vertical_lines(this.__wbg_ptr);
     }
     /**
      * @param {number} depth
@@ -84,6 +132,18 @@ export class ImageProcessor {
     apply_duotone(r1, g1, b1, r2, g2, b2) {
         wasm.imageprocessor_apply_duotone(this.__wbg_ptr, r1, g1, b1, r2, g2, b2);
     }
+    apply_edge_detection() {
+        wasm.imageprocessor_apply_edge_detection(this.__wbg_ptr);
+    }
+    apply_edge_one() {
+        wasm.imageprocessor_apply_edge_one(this.__wbg_ptr);
+    }
+    apply_emboss() {
+        wasm.imageprocessor_apply_emboss(this.__wbg_ptr);
+    }
+    apply_frosted_glass() {
+        wasm.imageprocessor_apply_frosted_glass(this.__wbg_ptr);
+    }
     /**
      * @param {number} red
      * @param {number} green
@@ -92,11 +152,32 @@ export class ImageProcessor {
     apply_gamma(red, green, blue) {
         wasm.imageprocessor_apply_gamma(this.__wbg_ptr, red, green, blue);
     }
+    /**
+     * @param {number} radius
+     */
+    apply_gaussian_blur(radius) {
+        wasm.imageprocessor_apply_gaussian_blur(this.__wbg_ptr, radius);
+    }
     apply_grayscale() {
         wasm.imageprocessor_apply_grayscale(this.__wbg_ptr);
     }
+    apply_grayscale_human_corrected() {
+        wasm.imageprocessor_apply_grayscale_human_corrected(this.__wbg_ptr);
+    }
+    /**
+     * @param {number} num_shades
+     */
+    apply_grayscale_shades(num_shades) {
+        wasm.imageprocessor_apply_grayscale_shades(this.__wbg_ptr, num_shades);
+    }
     apply_halftone() {
         wasm.imageprocessor_apply_halftone(this.__wbg_ptr);
+    }
+    /**
+     * @param {number} num_strips
+     */
+    apply_horizontal_strips(num_strips) {
+        wasm.imageprocessor_apply_horizontal_strips(this.__wbg_ptr, num_strips);
     }
     /**
      * @param {number} level
@@ -104,8 +185,14 @@ export class ImageProcessor {
     apply_hue(level) {
         wasm.imageprocessor_apply_hue(this.__wbg_ptr, level);
     }
+    apply_identity() {
+        wasm.imageprocessor_apply_identity(this.__wbg_ptr);
+    }
     apply_invert() {
         wasm.imageprocessor_apply_invert(this.__wbg_ptr);
+    }
+    apply_laplace() {
+        wasm.imageprocessor_apply_laplace(this.__wbg_ptr);
     }
     /**
      * @param {number} level
@@ -121,6 +208,9 @@ export class ImageProcessor {
      */
     apply_noise_reduction(strength) {
         wasm.imageprocessor_apply_noise_reduction(this.__wbg_ptr, strength);
+    }
+    apply_normalize() {
+        wasm.imageprocessor_apply_normalize(this.__wbg_ptr);
     }
     /**
      * @param {number} radius
@@ -143,6 +233,12 @@ export class ImageProcessor {
         const len0 = WASM_VECTOR_LEN;
         wasm.imageprocessor_apply_preset_filter(this.__wbg_ptr, ptr0, len0);
     }
+    apply_prewitt_horizontal() {
+        wasm.imageprocessor_apply_prewitt_horizontal(this.__wbg_ptr);
+    }
+    apply_primary() {
+        wasm.imageprocessor_apply_primary(this.__wbg_ptr);
+    }
     /**
      * @param {number} level
      */
@@ -158,6 +254,15 @@ export class ImageProcessor {
     apply_sharpen(strength) {
         wasm.imageprocessor_apply_sharpen(this.__wbg_ptr, strength);
     }
+    apply_sobel_global() {
+        wasm.imageprocessor_apply_sobel_global(this.__wbg_ptr);
+    }
+    apply_sobel_horizontal() {
+        wasm.imageprocessor_apply_sobel_horizontal(this.__wbg_ptr);
+    }
+    apply_sobel_vertical() {
+        wasm.imageprocessor_apply_sobel_vertical(this.__wbg_ptr);
+    }
     apply_solarize() {
         wasm.imageprocessor_apply_solarize(this.__wbg_ptr);
     }
@@ -166,6 +271,20 @@ export class ImageProcessor {
      */
     apply_threshold(threshold) {
         wasm.imageprocessor_apply_threshold(this.__wbg_ptr, threshold);
+    }
+    /**
+     * @param {number} r
+     * @param {number} g
+     * @param {number} b
+     */
+    apply_tint(r, g, b) {
+        wasm.imageprocessor_apply_tint(this.__wbg_ptr, r, g, b);
+    }
+    /**
+     * @param {number} num_strips
+     */
+    apply_vertical_strips(num_strips) {
+        wasm.imageprocessor_apply_vertical_strips(this.__wbg_ptr, num_strips);
     }
     /**
      * @param {number} x1
@@ -375,6 +494,24 @@ export class ImageProcessor {
         } finally {
             wasm.__wbindgen_add_to_stack_pointer(16);
         }
+    }
+    /**
+     * @param {number} offset_amt
+     */
+    offset_blue(offset_amt) {
+        wasm.imageprocessor_offset_blue(this.__wbg_ptr, offset_amt);
+    }
+    /**
+     * @param {number} offset_amt
+     */
+    offset_green(offset_amt) {
+        wasm.imageprocessor_offset_green(this.__wbg_ptr, offset_amt);
+    }
+    /**
+     * @param {number} offset_amt
+     */
+    offset_red(offset_amt) {
+        wasm.imageprocessor_offset_red(this.__wbg_ptr, offset_amt);
     }
     reset() {
         wasm.imageprocessor_reset(this.__wbg_ptr);

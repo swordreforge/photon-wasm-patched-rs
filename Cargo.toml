@@ -20,3 +20,6 @@ panic = "abort"         # 在 panic 时直接终止，减少 unwind 代码
 strip = "symbols"       # 移除符号
 debug = false           # 不包含调试信息
 incremental = false     # 关闭增量编译
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false        # 禁用 wasm-opt 以兼容旧版本
