@@ -1,10 +1,5 @@
 //! Add noise to images.
 
-use image::Pixel;
-use image::{GenericImage, GenericImageView};
-
-use crate::helpers;
-use crate::iter::ImageIterator;
 use crate::PhotonImage;
 
 #[cfg(feature = "enable_wasm")]
@@ -37,31 +32,8 @@ use rand::Rng;
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn add_noise_rand(photon_image: &mut PhotonImage) {
-    let mut img = helpers::dyn_image_from_raw(photon_image);
-
-    #[cfg(not(all(target_arch = "wasm64", not(target_os = "wasi"))))]
-    let mut rng = rand::thread_rng();
-
-    for (x, y) in ImageIterator::with_dimension(&img.dimensions()) {
-        #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"))))]
-        let offset = rng.gen_range(0, 150);
-
-        #[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
-        let offset = (random() * 150.0) as u8;
-
-        let px =
-            img.get_pixel(x, y).map(
-                |ch| {
-                    if ch <= 255 - offset {
-                        ch + offset
-                    } else {
-                        255
-                    }
-                },
-            );
-        img.put_pixel(x, y, px);
-    }
-    photon_image.raw_pixels = img.into_bytes();
+    // Use SIMD optimized version
+    add_noise_rand_simd(photon_image);
 }
 
 /// Add randomized noise to an image with adjustable strength.
@@ -88,43 +60,8 @@ pub fn add_noise_rand(photon_image: &mut PhotonImage) {
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn add_noise_rand_with_strength(photon_image: &mut PhotonImage, strength: f32) {
-    // Clamp strength to valid range
-    let strength = strength.clamp(0.0, 10.0);
-    
-    // Calculate maximum offset based on strength
-    // Original function uses 150, so we scale accordingly
-    let max_offset = (15.0 * strength) as u8;
-    
-    // If strength is 0, no noise to add
-    if max_offset == 0 {
-        return;
-    }
-    
-    let mut img = helpers::dyn_image_from_raw(photon_image);
-
-    #[cfg(not(all(target_arch = "wasm64", not(target_os = "wasi"))))]
-    let mut rng = rand::thread_rng();
-
-    for (x, y) in ImageIterator::with_dimension(&img.dimensions()) {
-        #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"))))]
-        let offset = rng.gen_range(0, max_offset as i32) as u8;
-
-        #[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
-        let offset = (random() * max_offset as f64) as u8;
-
-        let px =
-            img.get_pixel(x, y).map(
-                |ch| {
-                    if ch <= 255 - offset {
-                        ch + offset
-                    } else {
-                        255
-                    }
-                },
-            );
-        img.put_pixel(x, y, px);
-    }
-    photon_image.raw_pixels = img.into_bytes();
+    // Use SIMD optimized version
+    add_noise_rand_with_strength_simd(photon_image, strength);
 }
 
 /// Add pink-tinted noise to an image.
@@ -146,7 +83,11 @@ pub fn add_noise_rand_with_strength(photon_image: &mut PhotonImage, strength: f3
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn pink_noise(photon_image: &mut PhotonImage) {
-    let mut img = helpers::dyn_image_from_raw(photon_image);
+    let width = photon_image.width;
+    let height = photon_image.height;
+    let pixels = photon_image.raw_pixels.as_mut_slice();
+    let num_pixels = (width * height) as usize;
+
     #[cfg(not(all(target_arch = "wasm64", not(target_os = "wasi"))))]
     let mut rng = rand::thread_rng();
 
@@ -156,7 +97,9 @@ pub fn pink_noise(photon_image: &mut PhotonImage) {
     #[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
     let rng_gen = || random();
 
-    for (x, y) in ImageIterator::with_dimension(&img.dimensions()) {
+    for i in 0..num_pixels {
+        let idx = i * 4;
+        
         let ran1: f64 = rng_gen(); // generates a float between 0 and 1
         let ran2: f64 = rng_gen();
         let ran3: f64 = rng_gen();
@@ -165,14 +108,276 @@ pub fn pink_noise(photon_image: &mut PhotonImage) {
         let ran_color2: f64 = 0.6 + ran2 * 0.1;
         let ran_color3: f64 = 0.6 + ran3 * 0.4;
 
-        let mut px = img.get_pixel(x, y);
-        let channels = px.channels();
-
-        let new_r_val = (channels[0] as f64 * 0.99 * ran_color1) as u8;
-        let new_g_val = (channels[1] as f64 * 0.99 * ran_color2) as u8;
-        let new_b_val = (channels[2] as f64 * 0.99 * ran_color3) as u8;
-        px = image::Rgba([new_r_val, new_g_val, new_b_val, 255]);
-        img.put_pixel(x, y, px);
+        let new_r_val = (pixels[idx] as f64 * 0.99 * ran_color1) as u8;
+        let new_g_val = (pixels[idx + 1] as f64 * 0.99 * ran_color2) as u8;
+        let new_b_val = (pixels[idx + 2] as f64 * 0.99 * ran_color3) as u8;
+        
+        pixels[idx] = new_r_val;
+        pixels[idx + 1] = new_g_val;
+        pixels[idx + 2] = new_b_val;
+        // Alpha channel remains unchanged
     }
-    photon_image.raw_pixels = img.into_bytes();
 }
+
+/// Add randomized noise to an image using SIMD optimization.
+///
+/// This is the SIMD-optimized version of `add_noise_rand`.
+/// Processes pixels in batches using SIMD vectors for better performance.
+///
+/// # Arguments
+/// * `photon_image` - A PhotonImage.
+///
+/// # Example
+///
+/// ```no_run
+/// use photon_rs::native::open_image;
+/// use photon_rs::noise::add_noise_rand_simd;
+///
+/// let mut img = open_image("img.jpg").expect("File should open");
+/// add_noise_rand_simd(&mut img);
+/// ```
+#[inline]
+pub fn add_noise_rand_simd(photon_image: &mut PhotonImage) {
+    use std::simd::{Simd, num::SimdUint};
+
+    let _width = photon_image.width;
+    let _height = photon_image.height;
+    let pixels = photon_image.raw_pixels.as_mut_slice();
+    let len = pixels.len();
+
+    if len < 12 {
+        // Fallback to scalar for very small images
+        add_noise_rand(photon_image);
+        return;
+    }
+
+    #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"))))]
+    let mut rng = rand::thread_rng();
+
+    // Process 4 pixels at a time (16 bytes: 4 RGBA pixels)
+    let batch_size = 16;
+    let num_batches = len / batch_size;
+
+    for batch in 0..num_batches {
+        let base_idx = batch * batch_size;
+
+        // Generate random offsets for this batch
+        #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"))))]
+        let offsets: [u8; 4] = [
+            rng.gen_range(0..150) as u8,
+            rng.gen_range(0..150) as u8,
+            rng.gen_range(0..150) as u8,
+            rng.gen_range(0..150) as u8,
+        ];
+
+        #[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
+        let offsets: [u8; 4] = [
+            (random() * 150.0) as u8,
+            (random() * 150.0) as u8,
+            (random() * 150.0) as u8,
+            (random() * 150.0) as u8,
+        ];
+
+        unsafe {
+            // Load 4 pixels (16 bytes)
+            let mut data = [0u8; 16];
+            for j in 0..16 {
+                data[j] = *pixels.get_unchecked(base_idx + j);
+            }
+
+            // Apply noise to each pixel using SIMD-like processing
+            for p in 0..4 {
+                let p_offset = p * 4;
+                let offset = offsets[p];
+
+                // Use SIMD for adding noise to RGB channels
+                let rgb_simd = Simd::from_array([
+                    data[p_offset],
+                    data[p_offset + 1],
+                    data[p_offset + 2],
+                    0,
+                ]);
+
+                let offset_simd = Simd::splat(offset);
+                let result = rgb_simd.saturating_add(offset_simd);
+
+                data[p_offset] = result[0];
+                data[p_offset + 1] = result[1];
+                data[p_offset + 2] = result[2];
+                // Alpha channel (index p_offset + 3) remains unchanged
+            }
+
+            // Write back
+            for j in 0..16 {
+                *pixels.get_unchecked_mut(base_idx + j) = data[j];
+            }
+        }
+    }
+
+    // Process remaining pixels
+    let start_remainder = num_batches * batch_size;
+    for i in (start_remainder..len).step_by(4) {
+        #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"))))]
+        let offset = rng.gen_range(0..150) as u8;
+
+        #[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
+        let offset = (random() * 150.0) as u8;
+
+        // Apply noise to RGB channels (skip alpha)
+        for channel in 0..3 {
+            let pixel_idx = i + channel;
+            let ch = pixels[pixel_idx];
+            pixels[pixel_idx] = if ch <= 255 - offset {
+                ch + offset
+            } else {
+                255
+            };
+        }
+    }
+}
+
+/// Add randomized noise to an image with adjustable strength using SIMD optimization.
+///
+/// This is the SIMD-optimized version of `add_noise_rand_with_strength`.
+/// Processes pixels in batches using SIMD vectors for better performance.
+///
+/// # Arguments
+/// * `photon_image` - A PhotonImage.
+/// * `strength` - Noise strength. Range: 0.0 to 10.0.
+///
+/// # Example
+///
+/// ```no_run
+/// use photon_rs::native::open_image;
+/// use photon_rs::noise::add_noise_rand_with_strength_simd;
+///
+/// let mut img = open_image("img.jpg").expect("File should open");
+/// add_noise_rand_with_strength_simd(&mut img, 2.0);
+/// ```
+#[inline]
+pub fn add_noise_rand_with_strength_simd(photon_image: &mut PhotonImage, strength: f32) {
+    use std::simd::{Simd, num::SimdUint};
+    
+    // Clamp strength to valid range
+    let strength = strength.clamp(0.0, 10.0);
+    
+    // Calculate maximum offset based on strength
+    let max_offset = (15.0 * strength) as u8;
+    
+    // If strength is 0, no noise to add
+    if max_offset == 0 {
+        return;
+    }
+
+    let _width = photon_image.width;
+    let _height = photon_image.height;
+    let pixels = photon_image.raw_pixels.as_mut_slice();
+    let len = pixels.len();
+
+    if len < 12 {
+        // Fallback to scalar for very small images
+        add_noise_rand_with_strength(photon_image, strength);
+        return;
+    }
+
+    #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"))))]
+    let mut rng = rand::thread_rng();
+
+    // Process 4 pixels at a time (16 bytes: 4 RGBA pixels)
+    let batch_size = 16;
+    let num_batches = len / batch_size;
+
+    for batch in 0..num_batches {
+        let base_idx = batch * batch_size;
+
+        // Generate random offsets for this batch
+        #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"))))]
+        let offsets: [u8; 4] = [
+            rng.gen_range(0..max_offset as i32) as u8,
+            rng.gen_range(0..max_offset as i32) as u8,
+            rng.gen_range(0..max_offset as i32) as u8,
+            rng.gen_range(0..max_offset as i32) as u8,
+        ];
+
+        #[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
+        let offsets: [u8; 4] = [
+            (random() * max_offset as f64) as u8,
+            (random() * max_offset as f64) as u8,
+            (random() * max_offset as f64) as u8,
+            (random() * max_offset as f64) as u8,
+        ];
+
+        unsafe {
+            // Load 4 pixels (16 bytes)
+            let mut data = [0u8; 16];
+            for j in 0..16 {
+                data[j] = *pixels.get_unchecked(base_idx + j);
+            }
+
+            // Apply noise to each pixel using SIMD-like processing
+            for p in 0..4 {
+                let p_offset = p * 4;
+                let offset = offsets[p];
+
+                // Use SIMD for adding noise to RGB channels
+                let rgb_simd = Simd::from_array([
+                    data[p_offset],
+                    data[p_offset + 1],
+                    data[p_offset + 2],
+                    0,
+                ]);
+
+                let offset_simd = Simd::splat(offset);
+                let result = rgb_simd.saturating_add(offset_simd);
+
+                data[p_offset] = result[0];
+                data[p_offset + 1] = result[1];
+                data[p_offset + 2] = result[2];
+                // Alpha channel (index p_offset + 3) remains unchanged
+            }
+
+            // Write back
+            for j in 0..16 {
+                *pixels.get_unchecked_mut(base_idx + j) = data[j];
+            }
+        }
+    }
+
+    // Process remaining pixels
+    let start_remainder = num_batches * batch_size;
+    for i in (start_remainder..len).step_by(4) {
+        #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"))))]
+        let offset = rng.gen_range(0..max_offset as i32) as u8;
+
+        #[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
+        let offset = (random() * max_offset as f64) as u8;
+
+        // Apply noise to RGB channels (skip alpha)
+        for channel in 0..3 {
+            let pixel_idx = i + channel;
+            let ch = pixels[pixel_idx];
+            pixels[pixel_idx] = if ch <= 255 - offset {
+                ch + offset
+            } else {
+                255
+            };
+        }
+    }
+}
+
+// Parallel versions available in the parallel module
+// For multi-threaded noise generation, use:
+// - crate::parallel::add_noise_rand_parallel()
+// - crate::parallel::add_noise_rand_with_strength_parallel()
+//
+// These functions use Rayon for parallel processing and can provide
+// 2-4x speedup on multi-core systems for large images.
+//
+// Example:
+// ```no_run
+// use photon_rs::parallel;
+// use photon_rs::native::open_image;
+//
+// let mut img = open_image("large.jpg").expect("File should open");
+// parallel::add_noise_rand_parallel(&mut img, 5.0);
+// ```

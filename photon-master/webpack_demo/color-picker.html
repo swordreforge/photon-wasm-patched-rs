@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photon 取色器演示</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+      }
+
+      h1 {
+        color: white;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      }
+
+      .container {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: 1400px;
+        width: 100%;
+      }
+
+      .canvas-container {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      }
+
+      #imageCanvas {
+        border: 2px solid #ddd;
+        border-radius: 5px;
+        cursor: crosshair;
+        display: block;
+      }
+
+      .sidebar {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        min-width: 300px;
+        max-width: 400px;
+      }
+
+      .section {
+        margin-bottom: 25px;
+      }
+
+      .section h2 {
+        color: #333;
+        font-size: 18px;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 5px;
+      }
+
+      .color-display {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .color-preview {
+        width: 60px;
+        height: 60px;
+        border: 2px solid #ddd;
+        border-radius: 5px;
+        background: #000;
+      }
+
+      .color-info {
+        flex: 1;
+      }
+
+      .color-info div {
+        margin: 5px 0;
+        font-size: 14px;
+      }
+
+      .color-info span {
+        font-weight: bold;
+        color: #667eea;
+      }
+
+      .palette {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 10px;
+      }
+
+      .palette-color {
+        width: 40px;
+        height: 40px;
+        border: 2px solid #ddd;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+
+      .palette-color:hover {
+        transform: scale(1.2);
+      }
+
+      .palette-color.selected {
+        border: 3px solid #667eea;
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+      }
+
+      .btn {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        transition: background 0.3s;
+      }
+
+      .btn:hover {
+        background: #5568d3;
+      }
+
+      .btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+
+      .info-text {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: white;
+      }
+
+      .coordinate {
+        display: inline-block;
+        background: #f0f0f0;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 12px;
+        margin-left: 10px;
+      }
+
+      .region-controls {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .region-controls input {
+        width: 100%;
+        padding: 5px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+      }
+
+      .region-controls label {
+        font-size: 12px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🎨 Photon 取色器演示</h1>
+
+    <div class="container">
+      <div class="canvas-container">
+        <canvas id="imageCanvas"></canvas>
+      </div>
+
+      <div class="sidebar">
+        <div class="section">
+          <h2>📍 单点取色</h2>
+          <div class="color-display">
+            <div class="color-preview" id="pixelPreview"></div>
+            <div class="color-info">
+              <div>坐标: <span class="coordinate" id="pixelCoord">-</span></div>
+              <div>RGB: <span id="pixelRGB">-</span></div>
+              <div>Hex: <span id="pixelHex">-</span></div>
+              <div>亮度: <span id="pixelBrightness">-</span></div>
+            </div>
+          </div>
+          <div class="info-text">点击图像任意位置获取颜色</div>
+        </div>
+
+        <div class="section">
+          <h2>📐 区域平均颜色</h2>
+          <div class="region-controls">
+            <div>
+              <label>X:</label>
+              <input type="number" id="regionX" value="0" min="0">
+            </div>
+            <div>
+              <label>Y:</label>
+              <input type="number" id="regionY" value="0" min="0">
+            </div>
+            <div>
+              <label>宽度:</label>
+              <input type="number" id="regionW" value="50" min="1">
+            </div>
+            <div>
+              <label>高度:</label>
+              <input type="number" id="regionH" value="50" min="1">
+            </div>
+          </div>
+          <button class="btn" id="btnRegionAverage">获取区域平均颜色</button>
+          <div class="color-display">
+            <div class="color-preview" id="regionPreview"></div>
+            <div class="color-info">
+              <div>RGB: <span id="regionRGB">-</span></div>
+              <div>亮度: <span id="regionBrightness">-</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>🎯 主色调</h2>
+          <button class="btn" id="btnDominant">获取整个图像主色调</button>
+          <button class="btn" id="btnRegionDominant">获取区域主色调</button>
+          <div class="color-display">
+            <div class="color-preview" id="dominantPreview"></div>
+            <div class="color-info">
+              <div>RGB: <span id="dominantRGB">-</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>🎨 调色板</h2>
+          <div>
+            <label>颜色数量:</label>
+            <input type="number" id="paletteSize" value="5" min="1" max="20" style="width: 60px;">
+            <button class="btn" id="btnPalette">生成调色板</button>
+          </div>
+          <div class="palette" id="palette"></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import init, { ImageProcessor } from '../pkg/photon_wasm.js';
+
+      let processor = null;
+      const canvas = document.getElementById('imageCanvas');
+      const ctx = canvas.getContext('2d');
+
+      // 初始化 WASM
+      async function initWasm() {
+        try {
+          await init();
+          await loadImage();
+        } catch (error) {
+          console.error('初始化失败:', error);
+        }
+      }
+
+      // 加载测试图像
+      async function loadImage() {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        // 创建一个渐变测试图像
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = 800;
+        tempCanvas.height = 600;
+        const tempCtx = tempCanvas.getContext('2d');
+
+        // 创建彩色渐变
+        const gradient = tempCtx.createLinearGradient(0, 0, 800, 600);
+        gradient.addColorStop(0, 'red');
+        gradient.addColorStop(0.25, 'yellow');
+        gradient.addColorStop(0.5, 'green');
+        gradient.addColorStop(0.75, 'cyan');
+        gradient.addColorStop(1, 'blue');
+        tempCtx.fillStyle = gradient;
+        tempCtx.fillRect(0, 0, 800, 600);
+
+        // 添加一些色块
+        tempCtx.fillStyle = '#ff6b6b';
+        tempCtx.fillRect(100, 100, 100, 100);
+        tempCtx.fillStyle = '#4ecdc4';
+        tempCtx.fillRect(300, 200, 100, 100);
+        tempCtx.fillStyle = '#ffe66d';
+        tempCtx.fillRect(500, 100, 100, 100);
+        tempCtx.fillStyle = '#95e1d3';
+        tempCtx.fillRect(200, 400, 100, 100);
+        tempCtx.fillStyle = '#f38181';
+        tempCtx.fillRect(600, 400, 100, 100);
+
+        canvas.width = 800;
+        canvas.height = 600;
+        ctx.drawImage(tempCanvas, 0, 0);
+
+        // 创建 ImageProcessor
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        processor = new ImageProcessor(canvas.width, canvas.height, imageData.data);
+
+        console.log('图像加载完成');
+      }
+
+      // 辅助函数：更新颜色显示
+      function updateColorPreview(elementId, r, g, b, a = 255) {
+        const preview = document.getElementById(elementId);
+        if (preview) {
+          preview.style.background = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+        }
+      }
+
+      // 辅助函数：RGB 转 Hex
+      function rgbToHex(r, g, b) {
+        return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+      }
+
+      // 点击画布获取颜色
+      canvas.addEventListener('click', (e) => {
+        if (!processor) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((e.clientX - rect.left) * (canvas.width / rect.width));
+        const y = Math.floor((e.clientY - rect.top) * (canvas.height / rect.height));
+
+        // 获取像素颜色
+        const color = processor.get_pixel_color(x, y);
+        if (color) {
+          const [r, g, b, a] = color;
+          
+          // 更新显示
+          updateColorPreview('pixelPreview', r, g, b, a);
+          document.getElementById('pixelCoord').textContent = `(${x}, ${y})`;
+          document.getElementById('pixelRGB').textContent = `(${r}, ${g}, ${b}, ${a})`;
+          document.getElementById('pixelHex').textContent = rgbToHex(r, g, b);
+
+          // 获取亮度
+          const brightness = processor.get_pixel_brightness(x, y);
+          document.getElementById('pixelBrightness').textContent = brightness !== null ? brightness : '-';
+        }
+      });
+
+      // 获取区域平均颜色
+      document.getElementById('btnRegionAverage').addEventListener('click', () => {
+        if (!processor) return;
+
+        const x = parseInt(document.getElementById('regionX').value);
+        const y = parseInt(document.getElementById('regionY').value);
+        const w = parseInt(document.getElementById('regionW').value);
+        const h = parseInt(document.getElementById('regionH').value);
+
+        const color = processor.get_region_average_color(x, y, w, h);
+        if (color) {
+          const [r, g, b, a] = color;
+          updateColorPreview('regionPreview', r, g, b, a);
+          document.getElementById('regionRGB').textContent = `(${r}, ${g}, ${b}, ${a})`;
+
+          const brightness = processor.get_region_average_brightness(x, y, w, h);
+          document.getElementById('regionBrightness').textContent = brightness !== null ? brightness : '-';
+
+          // 在画布上绘制选区
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x, y, w, h);
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x - 1, y - 1, w + 2, h + 2);
+        }
+      });
+
+      // 获取整个图像主色调
+      document.getElementById('btnDominant').addEventListener('click', () => {
+        if (!processor) return;
+
+        const color = processor.get_dominant_color();
+        if (color) {
+          const [r, g, b, a] = color;
+          updateColorPreview('dominantPreview', r, g, b, a);
+          document.getElementById('dominantRGB').textContent = `(${r}, ${g}, ${b}, ${a})`;
+        }
+      });
+
+      // 获取区域主色调
+      document.getElementById('btnRegionDominant').addEventListener('click', () => {
+        if (!processor) return;
+
+        const x = parseInt(document.getElementById('regionX').value);
+        const y = parseInt(document.getElementById('regionY').value);
+        const w = parseInt(document.getElementById('regionW').value);
+        const h = parseInt(document.getElementById('regionH').value);
+
+        const color = processor.get_region_dominant_color(x, y, w, h);
+        if (color) {
+          const [r, g, b, a] = color;
+          updateColorPreview('dominantPreview', r, g, b, a);
+          document.getElementById('dominantRGB').textContent = `(${r}, ${g}, ${b}, ${a})`;
+        }
+      });
+
+      // 生成调色板
+      document.getElementById('btnPalette').addEventListener('click', () => {
+        if (!processor) return;
+
+        const numColors = parseInt(document.getElementById('paletteSize').value);
+        const palette = processor.get_color_palette(numColors);
+
+        const paletteDiv = document.getElementById('palette');
+        paletteDiv.innerHTML = '';
+
+        palette.forEach((color, index) => {
+          const [r, g, b, a] = color;
+          const colorDiv = document.createElement('div');
+          colorDiv.className = 'palette-color';
+          colorDiv.style.background = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+          colorDiv.title = `RGB(${r}, ${g}, ${b}, ${a})`;
+          
+          colorDiv.addEventListener('click', () => {
+            document.querySelectorAll('.palette-color').forEach(c => c.classList.remove('selected'));
+            colorDiv.classList.add('selected');
+            updateColorPreview('pixelPreview', r, g, b, a);
+            document.getElementById('pixelRGB').textContent = `(${r}, ${g}, ${b}, ${a})`;
+            document.getElementById('pixelHex').textContent = rgbToHex(r, g, b);
+          });
+
+          paletteDiv.appendChild(colorDiv);
+        });
+      });
+
+      // 初始化
+      initWasm();
+    </script>
+  </body>
+</html>

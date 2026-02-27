@@ -1,24 +1,459 @@
 /* @ts-self-types="./photon_wasm.d.ts" */
+import { startWorkers } from './snippets/wasm-bindgen-rayon-38edf6e439f6d70d/src/workerHelpers.js';
 
 /**
- * 字体类型枚举
- * @enum {0 | 1 | 2}
+ * 混合模式
+ * @enum {0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}
  */
-export const FontType = Object.freeze({
-    /**
-     * 丁卯点阵体（默认，较小字体）
-     */
-    DingMaoDianZhen: 0, "0": "DingMaoDianZhen",
-    /**
-     * Roboto 常规字体
-     */
-    RobotoRegular: 1, "1": "RobotoRegular",
-    /**
-     * 站酷高端黑（较大字体）
-     */
-    ZzgfDianHei: 2, "2": "ZzgfDianHei",
+export const BlendMode = Object.freeze({
+    Normal: 0, "0": "Normal",
+    Multiply: 1, "1": "Multiply",
+    Screen: 2, "2": "Screen",
+    Overlay: 3, "3": "Overlay",
+    SoftLight: 4, "4": "SoftLight",
+    HardLight: 5, "5": "HardLight",
+    Difference: 6, "6": "Difference",
+    Exclusion: 7, "7": "Exclusion",
+    Lighten: 8, "8": "Lighten",
+    Darken: 9, "9": "Darken",
 });
 
+/**
+ * 笔刷配置
+ */
+export class BrushConfig {
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(BrushConfig.prototype);
+        obj.__wbg_ptr = ptr;
+        BrushConfigFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        BrushConfigFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_brushconfig_free(ptr, 0);
+    }
+    /**
+     * 创建默认基础画笔配置
+     * @returns {BrushConfig}
+     */
+    static default_basic() {
+        const ret = wasm.brushconfig_default_basic();
+        return BrushConfig.__wrap(ret);
+    }
+    /**
+     * @param {BrushType} brush_type
+     * @param {number} base_width
+     * @param {number} color_r
+     * @param {number} color_g
+     * @param {number} color_b
+     * @param {number} color_a
+     * @param {BlendMode} blend_mode
+     * @param {number} smoothness
+     * @param {number} pressure_sensitivity
+     */
+    constructor(brush_type, base_width, color_r, color_g, color_b, color_a, blend_mode, smoothness, pressure_sensitivity) {
+        const ret = wasm.brushconfig_new(brush_type, base_width, color_r, color_g, color_b, color_a, blend_mode, smoothness, pressure_sensitivity);
+        this.__wbg_ptr = ret >>> 0;
+        BrushConfigFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * 基础宽度（像素）
+     * @returns {number}
+     */
+    get base_width() {
+        const ret = wasm.__wbg_get_brushconfig_base_width(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 混合模式
+     * @returns {BlendMode}
+     */
+    get blend_mode() {
+        const ret = wasm.__wbg_get_brushconfig_blend_mode(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 笔刷类型
+     * @returns {BrushType}
+     */
+    get brush_type() {
+        const ret = wasm.__wbg_get_brushconfig_brush_type(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get color_a() {
+        const ret = wasm.__wbg_get_brushconfig_color_a(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get color_b() {
+        const ret = wasm.__wbg_get_brushconfig_color_b(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get color_g() {
+        const ret = wasm.__wbg_get_brushconfig_color_g(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 颜色（RGBA）
+     * @returns {number}
+     */
+    get color_r() {
+        const ret = wasm.__wbg_get_brushconfig_color_r(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 压感强度（0.0 - 1.0）
+     * @returns {number}
+     */
+    get pressure_sensitivity() {
+        const ret = wasm.__wbg_get_brushconfig_pressure_sensitivity(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 平滑度（0.0 - 1.0）
+     * @returns {number}
+     */
+    get smoothness() {
+        const ret = wasm.__wbg_get_brushconfig_smoothness(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 基础宽度（像素）
+     * @param {number} arg0
+     */
+    set base_width(arg0) {
+        wasm.__wbg_set_brushconfig_base_width(this.__wbg_ptr, arg0);
+    }
+    /**
+     * 混合模式
+     * @param {BlendMode} arg0
+     */
+    set blend_mode(arg0) {
+        wasm.__wbg_set_brushconfig_blend_mode(this.__wbg_ptr, arg0);
+    }
+    /**
+     * 笔刷类型
+     * @param {BrushType} arg0
+     */
+    set brush_type(arg0) {
+        wasm.__wbg_set_brushconfig_brush_type(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @param {number} arg0
+     */
+    set color_a(arg0) {
+        wasm.__wbg_set_brushconfig_color_a(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @param {number} arg0
+     */
+    set color_b(arg0) {
+        wasm.__wbg_set_brushconfig_color_b(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @param {number} arg0
+     */
+    set color_g(arg0) {
+        wasm.__wbg_set_brushconfig_color_g(this.__wbg_ptr, arg0);
+    }
+    /**
+     * 颜色（RGBA）
+     * @param {number} arg0
+     */
+    set color_r(arg0) {
+        wasm.__wbg_set_brushconfig_color_r(this.__wbg_ptr, arg0);
+    }
+    /**
+     * 压感强度（0.0 - 1.0）
+     * @param {number} arg0
+     */
+    set pressure_sensitivity(arg0) {
+        wasm.__wbg_set_brushconfig_pressure_sensitivity(this.__wbg_ptr, arg0);
+    }
+    /**
+     * 平滑度（0.0 - 1.0）
+     * @param {number} arg0
+     */
+    set smoothness(arg0) {
+        wasm.__wbg_set_brushconfig_smoothness(this.__wbg_ptr, arg0);
+    }
+}
+if (Symbol.dispose) BrushConfig.prototype[Symbol.dispose] = BrushConfig.prototype.free;
+
+/**
+ * 笔划数据
+ */
+export class BrushStroke {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        BrushStrokeFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_brushstroke_free(ptr, 0);
+    }
+    /**
+     * 添加一个点到笔划
+     * @param {StrokePoint} point
+     */
+    add_point(point) {
+        _assertClass(point, StrokePoint);
+        var ptr0 = point.__destroy_into_raw();
+        wasm.brushstroke_add_point(this.__wbg_ptr, ptr0);
+    }
+    /**
+     * 清除所有点
+     */
+    clear_points() {
+        wasm.brushstroke_clear_points(this.__wbg_ptr);
+    }
+    /**
+     * 获取笔刷配置
+     * @returns {BrushConfig}
+     */
+    get_config() {
+        const ret = wasm.brushstroke_get_config(this.__wbg_ptr);
+        return BrushConfig.__wrap(ret);
+    }
+    /**
+     * 获取点数量
+     * @returns {number}
+     */
+    get_points_count() {
+        const ret = wasm.brushstroke_get_points_count(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * 清除路径缓存（当点集改变时调用）
+     */
+    invalidate_path_cache() {
+        wasm.brushstroke_invalidate_path_cache(this.__wbg_ptr);
+    }
+    /**
+     * @param {BrushConfig} config
+     */
+    constructor(config) {
+        _assertClass(config, BrushConfig);
+        var ptr0 = config.__destroy_into_raw();
+        const ret = wasm.brushstroke_new(ptr0);
+        this.__wbg_ptr = ret >>> 0;
+        BrushStrokeFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * 获取点数量
+     * @returns {number}
+     */
+    point_count() {
+        const ret = wasm.brushstroke_point_count(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * 笔刷配置
+     * @returns {BrushConfig}
+     */
+    get config() {
+        const ret = wasm.__wbg_get_brushstroke_config(this.__wbg_ptr);
+        return BrushConfig.__wrap(ret);
+    }
+    /**
+     * 笔刷配置
+     * @param {BrushConfig} arg0
+     */
+    set config(arg0) {
+        _assertClass(arg0, BrushConfig);
+        var ptr0 = arg0.__destroy_into_raw();
+        wasm.__wbg_set_brushstroke_config(this.__wbg_ptr, ptr0);
+    }
+}
+if (Symbol.dispose) BrushStroke.prototype[Symbol.dispose] = BrushStroke.prototype.free;
+
+/**
+ * 笔刷类型
+ * @enum {0 | 1 | 2 | 3 | 4}
+ */
+export const BrushType = Object.freeze({
+    /**
+     * 基础画笔
+     */
+    Basic: 0, "0": "Basic",
+    /**
+     * 铅笔风格
+     */
+    Pencil: 1, "1": "Pencil",
+    /**
+     * 马克笔风格
+     */
+    Marker: 2, "2": "Marker",
+    /**
+     * 水彩笔风格
+     */
+    Watercolor: 3, "3": "Watercolor",
+    /**
+     * 橡皮擦
+     */
+    Eraser: 4, "4": "Eraser",
+});
+
+/**
+ * Color struct for representing RGBA colors.
+ */
+export class Color {
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(Color.prototype);
+        obj.__wbg_ptr = ptr;
+        ColorFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        ColorFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_color_free(ptr, 0);
+    }
+    /**
+     * @returns {number}
+     */
+    brightness() {
+        const ret = wasm.color_brightness(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} r
+     * @param {number} g
+     * @param {number} b
+     * @param {number} a
+     * @returns {Color}
+     */
+    static new(r, g, b, a) {
+        const ret = wasm.color_new(r, g, b, a);
+        return Color.__wrap(ret);
+    }
+    /**
+     * @param {boolean} include_alpha
+     * @returns {string}
+     */
+    to_hex(include_alpha) {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.color_to_hex(retptr, this.__wbg_ptr, include_alpha);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            deferred1_0 = r0;
+            deferred1_1 = r1;
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_export4(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * @returns {number}
+     */
+    get a() {
+        const ret = wasm.__wbg_get_color_a(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get b() {
+        const ret = wasm.__wbg_get_color_b(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get g() {
+        const ret = wasm.__wbg_get_color_g(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get r() {
+        const ret = wasm.__wbg_get_color_r(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set a(arg0) {
+        wasm.__wbg_set_color_a(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @param {number} arg0
+     */
+    set b(arg0) {
+        wasm.__wbg_set_color_b(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @param {number} arg0
+     */
+    set g(arg0) {
+        wasm.__wbg_set_color_g(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @param {number} arg0
+     */
+    set r(arg0) {
+        wasm.__wbg_set_color_r(this.__wbg_ptr, arg0);
+    }
+}
+if (Symbol.dispose) Color.prototype[Symbol.dispose] = Color.prototype.free;
+
+/**
+ * 颜色空间枚举，用于明度调整
+ * @enum {0 | 1 | 2 | 3}
+ */
+export const ColorSpace = Object.freeze({
+    /**
+     * HSL 颜色空间
+     */
+    Hsl: 0, "0": "Hsl",
+    /**
+     * LCH 颜色空间
+     */
+    Lch: 1, "1": "Lch",
+    /**
+     * HSV 颜色空间
+     */
+    Hsv: 2, "2": "Hsv",
+    /**
+     * HSLuv 颜色空间
+     */
+    Hsluv: 3, "3": "Hsluv",
+});
+
+/**
+ * 图像处理器结构体
+ * 这是公共 API，封装了所有图像处理功能
+ */
 export class ImageProcessor {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -36,6 +471,27 @@ export class ImageProcessor {
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_imageprocessor_free(ptr, 0);
+    }
+    /**
+     * 添加点到当前笔划
+     * @param {number} x
+     * @param {number} y
+     * @param {number} pressure
+     */
+    add_stroke_point(x, y, pressure) {
+        wasm.imageprocessor_add_stroke_point(this.__wbg_ptr, x, y, pressure);
+    }
+    /**
+     * @param {number} level
+     */
+    adjust_lightness(level) {
+        wasm.imageprocessor_adjust_lightness(this.__wbg_ptr, level);
+    }
+    /**
+     * @param {number} level
+     */
+    adjust_saturation(level) {
+        wasm.imageprocessor_adjust_saturation(this.__wbg_ptr, level);
     }
     /**
      * @param {number} amt
@@ -61,7 +517,7 @@ export class ImageProcessor {
      * @param {number} saturation
      * @param {number} hue
      * @param {number} lightness
-     * @param {string} lightness_color_space
+     * @param {ColorSpace} lightness_color_space
      * @param {number} gamma_red
      * @param {number} gamma_green
      * @param {number} gamma_blue
@@ -69,12 +525,18 @@ export class ImageProcessor {
      * @param {number} noise_reduction_strength
      */
     apply_all_adjustments(brightness, contrast, saturation, hue, lightness, lightness_color_space, gamma_red, gamma_green, gamma_blue, sharpen_strength, noise_reduction_strength) {
-        const ptr0 = passStringToWasm0(lightness_color_space, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.imageprocessor_apply_all_adjustments(this.__wbg_ptr, brightness, contrast, saturation, hue, lightness, ptr0, len0, gamma_red, gamma_green, gamma_blue, sharpen_strength, noise_reduction_strength);
+        wasm.imageprocessor_apply_all_adjustments(this.__wbg_ptr, brightness, contrast, saturation, hue, lightness, lightness_color_space, gamma_red, gamma_green, gamma_blue, sharpen_strength, noise_reduction_strength);
     }
     apply_b_grayscale() {
         wasm.imageprocessor_apply_b_grayscale(this.__wbg_ptr);
+    }
+    /**
+     * @param {number} sigma_spatial
+     * @param {number} sigma_range
+     * @param {boolean} fast_mode
+     */
+    apply_bilateral_filter(sigma_spatial, sigma_range, fast_mode) {
+        wasm.imageprocessor_apply_bilateral_filter(this.__wbg_ptr, sigma_spatial, sigma_range, fast_mode);
     }
     apply_box_blur() {
         wasm.imageprocessor_apply_box_blur(this.__wbg_ptr);
@@ -86,22 +548,22 @@ export class ImageProcessor {
         wasm.imageprocessor_apply_brightness(this.__wbg_ptr, level);
     }
     /**
-     * @param {number} num_strips
-     * @param {number} r
-     * @param {number} g
-     * @param {number} b
+     * @param {number} center_x
+     * @param {number} center_y
+     * @param {number} radius
+     * @param {number} feather_radius
      */
-    apply_color_horizontal_strips(num_strips, r, g, b) {
-        wasm.imageprocessor_apply_color_horizontal_strips(this.__wbg_ptr, num_strips, r, g, b);
+    apply_circular_mask(center_x, center_y, radius, feather_radius) {
+        wasm.imageprocessor_apply_circular_mask(this.__wbg_ptr, center_x, center_y, radius, feather_radius);
     }
     /**
-     * @param {number} num_strips
-     * @param {number} r
-     * @param {number} g
-     * @param {number} b
+     * @param {number} r_factor
+     * @param {number} g_factor
+     * @param {number} b_factor
+     * @param {number} strength
      */
-    apply_color_vertical_strips(num_strips, r, g, b) {
-        wasm.imageprocessor_apply_color_vertical_strips(this.__wbg_ptr, num_strips, r, g, b);
+    apply_color_noise_with_strength(r_factor, g_factor, b_factor, strength) {
+        wasm.imageprocessor_apply_color_noise_with_strength(this.__wbg_ptr, r_factor, g_factor, b_factor, strength);
     }
     apply_colorize() {
         wasm.imageprocessor_apply_colorize(this.__wbg_ptr);
@@ -195,12 +657,6 @@ export class ImageProcessor {
         wasm.imageprocessor_apply_halftone(this.__wbg_ptr);
     }
     /**
-     * @param {number} num_strips
-     */
-    apply_horizontal_strips(num_strips) {
-        wasm.imageprocessor_apply_horizontal_strips(this.__wbg_ptr, num_strips);
-    }
-    /**
      * @param {number} level
      */
     apply_hue(level) {
@@ -223,18 +679,22 @@ export class ImageProcessor {
     }
     /**
      * @param {number} level
-     * @param {string} color_space
+     * @param {ColorSpace} color_space
      */
     apply_lightness(level, color_space) {
-        const ptr0 = passStringToWasm0(color_space, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.imageprocessor_apply_lightness(this.__wbg_ptr, level, ptr0, len0);
+        wasm.imageprocessor_apply_lightness(this.__wbg_ptr, level, color_space);
     }
     apply_lix() {
         wasm.imageprocessor_apply_lix(this.__wbg_ptr);
     }
     apply_neue() {
         wasm.imageprocessor_apply_neue(this.__wbg_ptr);
+    }
+    /**
+     * @param {number} strength
+     */
+    apply_noise(strength) {
+        wasm.imageprocessor_apply_noise(this.__wbg_ptr, strength);
     }
     /**
      * @param {number} strength
@@ -252,11 +712,25 @@ export class ImageProcessor {
     apply_oil(radius, intensity) {
         wasm.imageprocessor_apply_oil(this.__wbg_ptr, radius, intensity);
     }
+    apply_pink_noise() {
+        wasm.imageprocessor_apply_pink_noise(this.__wbg_ptr);
+    }
     /**
      * @param {number} pixel_size
      */
     apply_pixelate(pixel_size) {
         wasm.imageprocessor_apply_pixelate(this.__wbg_ptr, pixel_size);
+    }
+    /**
+     * @param {Float32Array} vertices
+     * @param {boolean} anti_aliased
+     * @param {boolean} smooth_edges
+     * @param {number} smoothing_radius
+     */
+    apply_polygon_mask(vertices, anti_aliased, smooth_edges, smoothing_radius) {
+        const ptr0 = passArrayF32ToWasm0(vertices, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_apply_polygon_mask(this.__wbg_ptr, ptr0, len0, anti_aliased, smooth_edges, smoothing_radius);
     }
     /**
      * @param {string} filter_name
@@ -303,6 +777,16 @@ export class ImageProcessor {
         wasm.imageprocessor_apply_solarize(this.__wbg_ptr);
     }
     /**
+     * @param {number} num_strips
+     * @param {boolean} horizontal
+     * @param {number | null} [color_r]
+     * @param {number | null} [color_g]
+     * @param {number | null} [color_b]
+     */
+    apply_strips(num_strips, horizontal, color_r, color_g, color_b) {
+        wasm.imageprocessor_apply_strips(this.__wbg_ptr, num_strips, horizontal, isLikeNone(color_r) ? 0xFFFFFF : color_r, isLikeNone(color_g) ? 0xFFFFFF : color_g, isLikeNone(color_b) ? 0xFFFFFF : color_b);
+    }
+    /**
      * @param {number} threshold
      */
     apply_threshold(threshold) {
@@ -317,36 +801,17 @@ export class ImageProcessor {
         wasm.imageprocessor_apply_tint(this.__wbg_ptr, r, g, b);
     }
     /**
-     * @param {number} num_strips
-     */
-    apply_vertical_strips(num_strips) {
-        wasm.imageprocessor_apply_vertical_strips(this.__wbg_ptr, num_strips);
-    }
-    /**
      * @param {Uint8Array} watermark_bytes
      * @param {bigint} x
      * @param {bigint} y
+     * @param {number | null} [scale]
+     * @param {number | null} [opacity]
+     * @param {number | null} [rotation]
      */
-    apply_watermark(watermark_bytes, x, y) {
+    apply_watermark(watermark_bytes, x, y, scale, opacity, rotation) {
         const ptr0 = passArray8ToWasm0(watermark_bytes, wasm.__wbindgen_export);
         const len0 = WASM_VECTOR_LEN;
-        wasm.imageprocessor_apply_watermark(this.__wbg_ptr, ptr0, len0, x, y);
-    }
-    /**
-     * @param {Uint8Array} watermark_bytes
-     * @param {bigint} x
-     * @param {bigint} y
-     * @param {number} scale
-     * @param {string} _blend_mode
-     * @param {number} opacity
-     * @param {number} rotation
-     */
-    apply_watermark_advanced(watermark_bytes, x, y, scale, _blend_mode, opacity, rotation) {
-        const ptr0 = passArray8ToWasm0(watermark_bytes, wasm.__wbindgen_export);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(_blend_mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len1 = WASM_VECTOR_LEN;
-        wasm.imageprocessor_apply_watermark_advanced(this.__wbg_ptr, ptr0, len0, x, y, scale, ptr1, len1, opacity, rotation);
+        wasm.imageprocessor_apply_watermark(this.__wbg_ptr, ptr0, len0, x, y, isLikeNone(scale) ? 0x100000001 : Math.fround(scale), isLikeNone(opacity) ? 0x100000001 : Math.fround(opacity), isLikeNone(rotation) ? 0x100000001 : Math.fround(rotation));
     }
     /**
      * @param {Uint8Array} watermark_bytes
@@ -363,15 +828,53 @@ export class ImageProcessor {
         wasm.imageprocessor_apply_watermark_with_blend(this.__wbg_ptr, ptr0, len0, x, y, scale, ptr1, len1);
     }
     /**
-     * @param {Uint8Array} watermark_bytes
-     * @param {bigint} x
-     * @param {bigint} y
-     * @param {number} scale
+     * @param {number} target_r
+     * @param {number} target_g
+     * @param {number} target_b
+     * @param {number} tolerance
+     * @param {number} feather_radius
      */
-    apply_watermark_with_scale(watermark_bytes, x, y, scale) {
-        const ptr0 = passArray8ToWasm0(watermark_bytes, wasm.__wbindgen_export);
+    auto_crop_by_color(target_r, target_g, target_b, tolerance, feather_radius) {
+        wasm.imageprocessor_auto_crop_by_color(this.__wbg_ptr, target_r, target_g, target_b, tolerance, feather_radius);
+    }
+    /**
+     * 开始一笔新画
+     * @param {BrushConfig} config
+     */
+    begin_stroke(config) {
+        _assertClass(config, BrushConfig);
+        var ptr0 = config.__destroy_into_raw();
+        wasm.imageprocessor_begin_stroke(this.__wbg_ptr, ptr0);
+    }
+    /**
+     * @param {Uint8Array} overlay_bytes
+     * @param {string} blend_mode
+     * @param {number | null} [scale]
+     */
+    blend_images(overlay_bytes, blend_mode, scale) {
+        const ptr0 = passArray8ToWasm0(overlay_bytes, wasm.__wbindgen_export);
         const len0 = WASM_VECTOR_LEN;
-        wasm.imageprocessor_apply_watermark_with_scale(this.__wbg_ptr, ptr0, len0, x, y, scale);
+        const ptr1 = passStringToWasm0(blend_mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len1 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_blend_images(this.__wbg_ptr, ptr0, len0, ptr1, len1, isLikeNone(scale) ? 0x100000001 : Math.fround(scale));
+    }
+    /**
+     * @param {Uint8Array} overlay_bytes
+     * @param {number} scale
+     * @param {string} blend_mode
+     */
+    blend_images_with_scale(overlay_bytes, scale, blend_mode) {
+        const ptr0 = passArray8ToWasm0(overlay_bytes, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(blend_mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len1 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_blend_images_with_scale(this.__wbg_ptr, ptr0, len0, scale, ptr1, len1);
+    }
+    /**
+     * 清除所有笔划
+     */
+    clear_strokes() {
+        wasm.imageprocessor_clear_strokes(this.__wbg_ptr);
     }
     /**
      * @param {number} x1
@@ -395,33 +898,46 @@ export class ImageProcessor {
         wasm.imageprocessor_desaturate_hsl(this.__wbg_ptr, level);
     }
     /**
-     * @param {string} text
-     * @param {number} x
-     * @param {number} y
-     * @param {number} font_size
-     */
-    draw_text(text, x, y, font_size) {
-        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.imageprocessor_draw_text(this.__wbg_ptr, ptr0, len0, x, y, font_size);
-    }
-    /**
-     * @param {string} text
-     * @param {number} x
-     * @param {number} y
-     * @param {number} font_size
+     * 直接绘制一笔（简化接口，向后兼容）
+     * @param {any} points_js
      * @param {number} r
      * @param {number} g
      * @param {number} b
+     * @param {number} a
+     * @param {number} width
      */
-    draw_text_with_color(text, x, y, font_size, r, g, b) {
-        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.imageprocessor_draw_text_with_color(this.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b);
+    draw_stroke(points_js, r, g, b, a, width) {
+        wasm.imageprocessor_draw_stroke(this.__wbg_ptr, addHeapObject(points_js), r, g, b, a, width);
     }
     /**
-     * 绘制带颜色的文本，支持选择字体类型
-     * font_type: 0-2, 对应不同的字体
+     * 绘制一笔（高性能版本，使用 Float32Array）
+     * @param {Float32Array} points_array
+     * @param {number} r
+     * @param {number} g
+     * @param {number} b
+     * @param {number} a
+     * @param {number} width
+     */
+    draw_stroke_array(points_array, r, g, b, a, width) {
+        wasm.imageprocessor_draw_stroke_array(this.__wbg_ptr, addHeapObject(points_array), r, g, b, a, width);
+    }
+    /**
+     * @param {string} text
+     * @param {number} x
+     * @param {number} y
+     * @param {number} font_size
+     * @param {number | null} [font_type]
+     * @param {boolean | null} [has_shadow]
+     * @param {number | null} [color_r]
+     * @param {number | null} [color_g]
+     * @param {number | null} [color_b]
+     */
+    draw_text(text, x, y, font_size, font_type, has_shadow, color_r, color_g, color_b) {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_draw_text(this.__wbg_ptr, ptr0, len0, x, y, font_size, isLikeNone(font_type) ? 0xFFFFFF : font_type, isLikeNone(has_shadow) ? 0xFFFFFF : has_shadow ? 1 : 0, isLikeNone(color_r) ? 0xFFFFFF : color_r, isLikeNone(color_g) ? 0xFFFFFF : color_g, isLikeNone(color_b) ? 0xFFFFFF : color_b);
+    }
+    /**
      * @param {string} text
      * @param {number} x
      * @param {number} y
@@ -437,47 +953,24 @@ export class ImageProcessor {
         wasm.imageprocessor_draw_text_with_color_and_font(this.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b, font_type);
     }
     /**
-     * 绘制文本，支持选择字体类型
-     * font_type: 0-2, 对应不同的字体
      * @param {string} text
      * @param {number} x
      * @param {number} y
      * @param {number} font_size
-     * @param {number} font_type
+     * @param {string} font_name
+     * @param {boolean | null} [has_shadow]
+     * @param {number | null} [color_r]
+     * @param {number | null} [color_g]
+     * @param {number | null} [color_b]
      */
-    draw_text_with_font(text, x, y, font_size, font_type) {
+    draw_text_with_font_name(text, x, y, font_size, font_name, has_shadow, color_r, color_g, color_b) {
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len0 = WASM_VECTOR_LEN;
-        wasm.imageprocessor_draw_text_with_font(this.__wbg_ptr, ptr0, len0, x, y, font_size, font_type);
+        const ptr1 = passStringToWasm0(font_name, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len1 = WASM_VECTOR_LEN;
+        wasm.imageprocessor_draw_text_with_font_name(this.__wbg_ptr, ptr0, len0, x, y, font_size, ptr1, len1, isLikeNone(has_shadow) ? 0xFFFFFF : has_shadow ? 1 : 0, isLikeNone(color_r) ? 0xFFFFFF : color_r, isLikeNone(color_g) ? 0xFFFFFF : color_g, isLikeNone(color_b) ? 0xFFFFFF : color_b);
     }
     /**
-     * @param {string} text
-     * @param {number} x
-     * @param {number} y
-     * @param {number} font_size
-     */
-    draw_text_with_shadow(text, x, y, font_size) {
-        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.imageprocessor_draw_text_with_shadow(this.__wbg_ptr, ptr0, len0, x, y, font_size);
-    }
-    /**
-     * @param {string} text
-     * @param {number} x
-     * @param {number} y
-     * @param {number} font_size
-     * @param {number} r
-     * @param {number} g
-     * @param {number} b
-     */
-    draw_text_with_shadow_and_color(text, x, y, font_size, r, g, b) {
-        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.imageprocessor_draw_text_with_shadow_and_color(this.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b);
-    }
-    /**
-     * 绘制带阴影和颜色的文本，支持选择字体类型
-     * font_type: 0-2, 对应不同的字体
      * @param {string} text
      * @param {number} x
      * @param {number} y
@@ -493,18 +986,10 @@ export class ImageProcessor {
         wasm.imageprocessor_draw_text_with_shadow_and_color_and_font(this.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b, font_type);
     }
     /**
-     * 绘制带阴影的文本，支持选择字体类型
-     * font_type: 0-2, 对应不同的字体
-     * @param {string} text
-     * @param {number} x
-     * @param {number} y
-     * @param {number} font_size
-     * @param {number} font_type
+     * 结束当前笔划并渲染
      */
-    draw_text_with_shadow_and_font(text, x, y, font_size, font_type) {
-        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.imageprocessor_draw_text_with_shadow_and_font(this.__wbg_ptr, ptr0, len0, x, y, font_size, font_type);
+    end_stroke() {
+        wasm.imageprocessor_end_stroke(this.__wbg_ptr);
     }
     flip_horizontal() {
         wasm.imageprocessor_flip_horizontal(this.__wbg_ptr);
@@ -529,6 +1014,32 @@ export class ImageProcessor {
         }
     }
     /**
+     * 获取图像的调色板
+     *
+     * # 参数
+     * * `num_colors` - 要提取的颜色数量
+     *
+     * # 返回值
+     * 返回包含颜色数组的 JsValue (Array<Uint8Array>)，每个颜色是 [r, g, b, a] 格式
+     * @param {number} num_colors
+     * @returns {any}
+     */
+    get_color_palette(num_colors) {
+        const ret = wasm.imageprocessor_get_color_palette(this.__wbg_ptr, num_colors);
+        return takeObject(ret);
+    }
+    /**
+     * 获取整个图像的主色调
+     *
+     * # 返回值
+     * 返回包含 RGBA 值的 JsValue (Uint8Array)
+     * @returns {any}
+     */
+    get_dominant_color() {
+        const ret = wasm.imageprocessor_get_dominant_color(this.__wbg_ptr);
+        return takeObject(ret);
+    }
+    /**
      * @returns {bigint}
      */
     get_estimated_filesize() {
@@ -543,6 +1054,158 @@ export class ImageProcessor {
         return ret >>> 0;
     }
     /**
+     * 获取指定坐标的像素亮度
+     *
+     * # 参数
+     * * `x` - X 坐标 (0 到 width-1)
+     * * `y` - Y 坐标 (0 到 height-1)
+     *
+     * # 返回值
+     * 返回亮度值 (0-255)，如果坐标超出范围则返回 null
+     * @param {number} x
+     * @param {number} y
+     * @returns {number | undefined}
+     */
+    get_pixel_brightness(x, y) {
+        const ret = wasm.imageprocessor_get_pixel_brightness(this.__wbg_ptr, x, y);
+        return ret === 0xFFFFFF ? undefined : ret;
+    }
+    /**
+     * 获取指定坐标的像素颜色
+     *
+     * # 参数
+     * * `x` - X 坐标 (0 到 width-1)
+     * * `y` - Y 坐标 (0 到 height-1)
+     *
+     * # 返回值
+     * 返回包含 RGBA 值的 JsValue (Uint8Array)，如果坐标超出范围则返回 null
+     * @param {number} x
+     * @param {number} y
+     * @returns {any}
+     */
+    get_pixel_color(x, y) {
+        const ret = wasm.imageprocessor_get_pixel_color(this.__wbg_ptr, x, y);
+        return takeObject(ret);
+    }
+    /**
+     * 获取指定坐标的像素颜色的十六进制表示
+     *
+     * # 参数
+     * * `x` - X 坐标 (0 到 width-1)
+     * * `y` - Y 坐标 (0 到 height-1)
+     * * `include_alpha` - 是否包含 alpha 通道
+     *
+     * # 返回值
+     * 返回十六进制颜色字符串，如果坐标超出范围则返回 null
+     * @param {number} x
+     * @param {number} y
+     * @param {boolean} include_alpha
+     * @returns {string | undefined}
+     */
+    get_pixel_color_hex(x, y, include_alpha) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.imageprocessor_get_pixel_color_hex(retptr, this.__wbg_ptr, x, y, include_alpha);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            let v1;
+            if (r0 !== 0) {
+                v1 = getStringFromWasm0(r0, r1).slice();
+                wasm.__wbindgen_export4(r0, r1 * 1, 1);
+            }
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * @returns {Uint8Array}
+     */
+    get_raw_pixels() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.imageprocessor_get_raw_pixels(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export4(r0, r1 * 1, 1);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * 获取指定区域的平均亮度
+     *
+     * # 参数
+     * * `x` - 区域左上角 X 坐标
+     * * `y` - 区域左上角 Y 坐标
+     * * `width` - 区域宽度
+     * * `height` - 区域高度
+     *
+     * # 返回值
+     * 返回平均亮度值 (0-255)，如果区域超出范围则返回 null
+     * @param {number} x
+     * @param {number} y
+     * @param {number} width
+     * @param {number} height
+     * @returns {number | undefined}
+     */
+    get_region_average_brightness(x, y, width, height) {
+        const ret = wasm.imageprocessor_get_region_average_brightness(this.__wbg_ptr, x, y, width, height);
+        return ret === 0xFFFFFF ? undefined : ret;
+    }
+    /**
+     * 获取指定区域的平均颜色
+     *
+     * # 参数
+     * * `x` - 区域左上角 X 坐标
+     * * `y` - 区域左上角 Y 坐标
+     * * `width` - 区域宽度
+     * * `height` - 区域高度
+     *
+     * # 返回值
+     * 返回包含 RGBA 平均值的 JsValue (Uint8Array)，如果区域超出范围则返回 null
+     * @param {number} x
+     * @param {number} y
+     * @param {number} width
+     * @param {number} height
+     * @returns {any}
+     */
+    get_region_average_color(x, y, width, height) {
+        const ret = wasm.imageprocessor_get_region_average_color(this.__wbg_ptr, x, y, width, height);
+        return takeObject(ret);
+    }
+    /**
+     * 获取指定区域的主色调
+     *
+     * # 参数
+     * * `x` - 区域左上角 X 坐标
+     * * `y` - 区域左上角 Y 坐标
+     * * `width` - 区域宽度
+     * * `height` - 区域高度
+     *
+     * # 返回值
+     * 返回包含 RGBA 值的 JsValue (Uint8Array)，如果区域超出范围则返回 null
+     * @param {number} x
+     * @param {number} y
+     * @param {number} width
+     * @param {number} height
+     * @returns {any}
+     */
+    get_region_dominant_color(x, y, width, height) {
+        const ret = wasm.imageprocessor_get_region_dominant_color(this.__wbg_ptr, x, y, width, height);
+        return takeObject(ret);
+    }
+    /**
+     * 获取历史笔划数量
+     * @returns {number}
+     */
+    get_stroke_count() {
+        const ret = wasm.imageprocessor_get_stroke_count(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
      * @returns {number}
      */
     get_width() {
@@ -551,21 +1214,16 @@ export class ImageProcessor {
     }
     /**
      * @param {number} degrees
+     * @param {number} color_space
+     */
+    hue_rotate(degrees, color_space) {
+        wasm.imageprocessor_hue_rotate(this.__wbg_ptr, degrees, color_space);
+    }
+    /**
+     * @param {number} degrees
      */
     hue_rotate_hsl(degrees) {
         wasm.imageprocessor_hue_rotate_hsl(this.__wbg_ptr, degrees);
-    }
-    /**
-     * @param {number} degrees
-     */
-    hue_rotate_hsv(degrees) {
-        wasm.imageprocessor_hue_rotate_hsv(this.__wbg_ptr, degrees);
-    }
-    /**
-     * @param {number} degrees
-     */
-    hue_rotate_lch(degrees) {
-        wasm.imageprocessor_hue_rotate_lch(this.__wbg_ptr, degrees);
     }
     /**
      * @param {number} level
@@ -619,6 +1277,27 @@ export class ImageProcessor {
         }
     }
     /**
+     * 创建指定大小的白色画布
+     * @param {number} width
+     * @param {number} height
+     * @returns {ImageProcessor}
+     */
+    static new_white_canvas(width, height) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.imageprocessor_new_white_canvas(retptr, width, height);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+            if (r2) {
+                throw takeObject(r1);
+            }
+            return ImageProcessor.__wrap(r0);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
      * @param {number} offset_amt
      */
     offset_blue(offset_amt) {
@@ -635,6 +1314,12 @@ export class ImageProcessor {
      */
     offset_red(offset_amt) {
         wasm.imageprocessor_offset_red(this.__wbg_ptr, offset_amt);
+    }
+    /**
+     * @param {number} smoothing_radius
+     */
+    refine_edges(smoothing_radius) {
+        wasm.imageprocessor_refine_edges(this.__wbg_ptr, smoothing_radius);
     }
     remove_blue_channel() {
         wasm.imageprocessor_remove_blue_channel(this.__wbg_ptr);
@@ -659,8 +1344,6 @@ export class ImageProcessor {
         wasm.imageprocessor_rotate_90(this.__wbg_ptr);
     }
     /**
-     * 任意角度旋转
-     * angle: 旋转角度（度），支持 -360 到 360
      * @param {number} angle
      */
     rotate_any(angle) {
@@ -671,6 +1354,13 @@ export class ImageProcessor {
      */
     saturate_hsl(level) {
         wasm.imageprocessor_saturate_hsl(this.__wbg_ptr, level);
+    }
+    /**
+     * @param {number} threshold
+     * @param {number} feather_radius
+     */
+    smart_crop(threshold, feather_radius) {
+        wasm.imageprocessor_smart_crop(this.__wbg_ptr, threshold, feather_radius);
     }
     swap_gb_channels() {
         wasm.imageprocessor_swap_gb_channels(this.__wbg_ptr);
@@ -758,6 +1448,14 @@ export class ImageProcessor {
             wasm.__wbindgen_add_to_stack_pointer(16);
             wasm.__wbindgen_export4(deferred1_0, deferred1_1, 1);
         }
+    }
+    /**
+     * 撤销最后一笔
+     * @returns {boolean}
+     */
+    undo_stroke() {
+        const ret = wasm.imageprocessor_undo_stroke(this.__wbg_ptr);
+        return ret !== 0;
     }
 }
 if (Symbol.dispose) ImageProcessor.prototype[Symbol.dispose] = ImageProcessor.prototype.free;
@@ -864,15 +1562,17 @@ export class PhotonImage {
      *   - 51-75: Medium quality (recommended for web)
      *   - 76-100: High quality, larger file size
      *
-     * Note: Due to image 0.24.x API limitations, quality parameter is used as a hint.
-     * The actual quality may vary based on the encoder implementation.
-     * @param {number} quality
+     * Note: The image 0.24.x crate's WebPEncoder currently only supports lossless encoding.
+     * The quality parameter is reserved for future use when the crate adds lossy encoding support.
+     * Currently, all images are encoded in lossless mode regardless of the quality value.
+     * For quality control, consider using JPEG format with `get_bytes_jpeg()` instead.
+     * @param {number} _quality
      * @returns {Uint8Array}
      */
-    get_bytes_webp_with_quality(quality) {
+    get_bytes_webp_with_quality(_quality) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.photonimage_get_bytes_webp_with_quality(retptr, this.__wbg_ptr, quality);
+            wasm.photonimage_get_bytes_webp_with_quality(retptr, this.__wbg_ptr, _quality);
             var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
             var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
             var v1 = getArrayU8FromWasm0(r0, r1).slice();
@@ -881,6 +1581,62 @@ export class PhotonImage {
         } finally {
             wasm.__wbindgen_add_to_stack_pointer(16);
         }
+    }
+    /**
+     * Get the color palette of the image.
+     *
+     * Returns a list of the most frequent colors in the image.
+     *
+     * # Arguments
+     * * `num_colors` - Number of colors to extract (default 5)
+     *
+     * # Example
+     *
+     * ```no_run
+     * use photon_rs::PhotonImage;
+     *
+     * let img = PhotonImage::new(vec![255, 0, 0, 255, 0, 255, 0, 255], 2, 1);
+     * let palette = img.get_color_palette(5);
+     * for (i, color) in palette.iter().enumerate() {
+     *     println!("Color {}: #{:02x}{:02x}{:02x}", i + 1, color.r, color.g, color.b);
+     * }
+     * ```
+     * @param {number} num_colors
+     * @returns {Color[]}
+     */
+    get_color_palette(num_colors) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.photonimage_get_color_palette(retptr, this.__wbg_ptr, num_colors);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayJsValueFromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export4(r0, r1 * 4, 4);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * Get the dominant color of the entire image.
+     *
+     * Uses a color quantization approach to find the most frequent color.
+     * Returns the RGBA color values as a Color struct.
+     *
+     * # Example
+     *
+     * ```no_run
+     * use photon_rs::PhotonImage;
+     *
+     * let img = PhotonImage::new(vec![255, 0, 0, 255], 1, 1);
+     * let color = img.get_dominant_color();
+     * println!("Dominant color: R={}, G={}, B={}, A={}", color.r, color.g, color.b, color.a);
+     * ```
+     * @returns {Color}
+     */
+    get_dominant_color() {
+        const ret = wasm.photonimage_get_dominant_color(this.__wbg_ptr);
+        return Color.__wrap(ret);
     }
     /**
      * Calculates estimated filesize and returns number of bytes
@@ -907,7 +1663,108 @@ export class PhotonImage {
         return takeObject(ret);
     }
     /**
+     * Get the brightness of a pixel at the specified coordinates.
+     *
+     * Returns the brightness value (0-255) using the human-corrected formula.
+     * Returns None if the coordinates are out of bounds.
+     *
+     * # Arguments
+     * * `x` - X coordinate (0 to width-1)
+     * * `y` - Y coordinate (0 to height-1)
+     *
+     * # Example
+     *
+     * ```no_run
+     * use photon_rs::PhotonImage;
+     *
+     * let img = PhotonImage::new(vec![255, 0, 0, 255], 1, 1);
+     * if let Some(brightness) = img.get_pixel_brightness(0, 0) {
+     *     println!("Pixel brightness: {}", brightness);
+     * }
+     * ```
+     * @param {number} x
+     * @param {number} y
+     * @returns {number | undefined}
+     */
+    get_pixel_brightness(x, y) {
+        const ret = wasm.photonimage_get_pixel_brightness(this.__wbg_ptr, x, y);
+        return ret === 0xFFFFFF ? undefined : ret;
+    }
+    /**
+     * Get the color of a pixel at the specified coordinates.
+     *
+     * Returns the RGBA color values as a Color struct.
+     * Returns None if the coordinates are out of bounds.
+     *
+     * # Arguments
+     * * `x` - X coordinate (0 to width-1)
+     * * `y` - Y coordinate (0 to height-1)
+     *
+     * # Example
+     *
+     * ```no_run
+     * use photon_rs::PhotonImage;
+     *
+     * let img = PhotonImage::new(vec![255, 0, 0, 255], 1, 1);
+     * if let Some(color) = img.get_pixel_color(0, 0) {
+     *     println!("Pixel color: R={}, G={}, B={}, A={}", color.r, color.g, color.b, color.a);
+     * }
+     * ```
+     * @param {number} x
+     * @param {number} y
+     * @returns {Color | undefined}
+     */
+    get_pixel_color(x, y) {
+        const ret = wasm.photonimage_get_pixel_color(this.__wbg_ptr, x, y);
+        return ret === 0 ? undefined : Color.__wrap(ret);
+    }
+    /**
+     * Get the color of a pixel at the specified coordinates as a hex string.
+     *
+     * Returns the color in hex format (#RRGGBB or #RRGGBBAA).
+     * Returns None if the coordinates are out of bounds.
+     *
+     * # Arguments
+     * * `x` - X coordinate (0 to width-1)
+     * * `y` - Y coordinate (0 to height-1)
+     * * `include_alpha` - Whether to include alpha channel in the hex string
+     *
+     * # Example
+     *
+     * ```no_run
+     * use photon_rs::PhotonImage;
+     *
+     * let img = PhotonImage::new(vec![255, 0, 0, 255], 1, 1);
+     * if let Some(hex) = img.get_pixel_color_hex(0, 0, false) {
+     *     println!("Pixel color: {}", hex); // Output: #ff0000
+     * }
+     * ```
+     * @param {number} x
+     * @param {number} y
+     * @param {boolean} include_alpha
+     * @returns {string | undefined}
+     */
+    get_pixel_color_hex(x, y, include_alpha) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.photonimage_get_pixel_color_hex(retptr, this.__wbg_ptr, x, y, include_alpha);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            let v1;
+            if (r0 !== 0) {
+                v1 = getStringFromWasm0(r0, r1).slice();
+                wasm.__wbindgen_export4(r0, r1 * 1, 1);
+            }
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
      * Get the PhotonImage's pixels as a Vec of u8s.
+     *
+     * **Note**: This clones the pixel data, which can be expensive for large images.
+     * For read-only access, prefer `get_raw_pixels_slice()` which returns a reference without cloning.
      * @returns {Uint8Array}
      */
     get_raw_pixels() {
@@ -924,12 +1781,134 @@ export class PhotonImage {
         }
     }
     /**
+     * Get the average brightness of a rectangular region.
+     *
+     * Returns the average brightness value (0-255).
+     * Returns None if the region is out of bounds.
+     *
+     * # Arguments
+     * * `x` - X coordinate of the top-left corner
+     * * `y` - Y coordinate of the top-left corner
+     * * `width` - Width of the region
+     * * `height` - Height of the region
+     *
+     * # Example
+     *
+     * ```no_run
+     * use photon_rs::PhotonImage;
+     *
+     * let img = PhotonImage::new(vec![255, 0, 0, 255, 0, 255, 0, 255], 2, 1);
+     * if let Some(brightness) = img.get_region_average_brightness(0, 0, 2, 1) {
+     *     println!("Average brightness: {}", brightness);
+     * }
+     * ```
+     * @param {number} x
+     * @param {number} y
+     * @param {number} width
+     * @param {number} height
+     * @returns {number | undefined}
+     */
+    get_region_average_brightness(x, y, width, height) {
+        const ret = wasm.photonimage_get_region_average_brightness(this.__wbg_ptr, x, y, width, height);
+        return ret === 0xFFFFFF ? undefined : ret;
+    }
+    /**
+     * Get the average color of a rectangular region.
+     *
+     * Returns the average RGBA color values as a Color struct.
+     * Returns None if the region is out of bounds.
+     *
+     * # Arguments
+     * * `x` - X coordinate of the top-left corner
+     * * `y` - Y coordinate of the top-left corner
+     * * `width` - Width of the region
+     * * `height` - Height of the region
+     *
+     * # Example
+     *
+     * ```no_run
+     * use photon_rs::PhotonImage;
+     *
+     * let img = PhotonImage::new(vec![255, 0, 0, 255, 0, 255, 0, 255], 2, 1);
+     * if let Some(color) = img.get_region_average_color(0, 0, 2, 1) {
+     *     println!("Average color: R={}, G={}, B={}, A={}", color.r, color.g, color.b, color.a);
+     * }
+     * ```
+     * @param {number} x
+     * @param {number} y
+     * @param {number} width
+     * @param {number} height
+     * @returns {Color | undefined}
+     */
+    get_region_average_color(x, y, width, height) {
+        const ret = wasm.photonimage_get_region_average_color(this.__wbg_ptr, x, y, width, height);
+        return ret === 0 ? undefined : Color.__wrap(ret);
+    }
+    /**
+     * Get the dominant color of a rectangular region.
+     *
+     * Uses a color quantization approach to find the most frequent color in the region.
+     * Returns None if the region is out of bounds.
+     *
+     * # Arguments
+     * * `x` - X coordinate of the top-left corner
+     * * `y` - Y coordinate of the top-left corner
+     * * `width` - Width of the region
+     * * `height` - Height of the region
+     *
+     * # Example
+     *
+     * ```no_run
+     * use photon_rs::PhotonImage;
+     *
+     * let img = PhotonImage::new(vec![255, 0, 0, 255, 0, 255, 0, 255], 2, 1);
+     * if let Some(color) = img.get_region_dominant_color(0, 0, 2, 1) {
+     *     println!("Dominant color: R={}, G={}, B={}, A={}", color.r, color.g, color.b, color.a);
+     * }
+     * ```
+     * @param {number} x
+     * @param {number} y
+     * @param {number} width
+     * @param {number} height
+     * @returns {Color | undefined}
+     */
+    get_region_dominant_color(x, y, width, height) {
+        const ret = wasm.photonimage_get_region_dominant_color(this.__wbg_ptr, x, y, width, height);
+        return ret === 0 ? undefined : Color.__wrap(ret);
+    }
+    /**
      * Get the width of the PhotonImage.
      * @returns {number}
      */
     get_width() {
         const ret = wasm.photonimage_get_width(this.__wbg_ptr);
         return ret >>> 0;
+    }
+    /**
+     * Initialize the thread pool for WebAssembly parallel processing.
+     *
+     * This function must be called from JavaScript before using any parallel processing features.
+     * It sets up the worker threads for rayon parallel execution.
+     *
+     * # JavaScript Example
+     * ```javascript
+     * import { initThreadPool } from './photon_wasm.js';
+     *
+     * // Initialize with 4 threads
+     * await initThreadPool(4);
+     *
+     * // Now you can use parallel processing features
+     * ```
+     *
+     * # Arguments
+     * * `num_threads` - Number of threads to use for parallel processing.
+     *   If 0, it will use the hardware concurrency (number of logical CPUs).
+     * @param {number} num_threads
+     * @returns {Promise<void>}
+     */
+    static init_thread_pool(num_threads) {
+        const ret = wasm.photonimage_init_thread_pool(num_threads);
+        return takeObject(ret);
     }
     /**
      * Create a new PhotonImage from a Vec of u8s, which represent raw pixels.
@@ -1171,6 +2150,95 @@ export const SamplingFilter = Object.freeze({
 });
 
 /**
+ * 笔划点
+ */
+export class StrokePoint {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        StrokePointFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_strokepoint_free(ptr, 0);
+    }
+    /**
+     * 压感（0.0 - 1.0）
+     * @returns {number}
+     */
+    get pressure() {
+        const ret = wasm.__wbg_get_strokepoint_pressure(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 时间戳（毫秒）
+     * @returns {bigint}
+     */
+    get timestamp() {
+        const ret = wasm.__wbg_get_strokepoint_timestamp(this.__wbg_ptr);
+        return BigInt.asUintN(64, ret);
+    }
+    /**
+     * X 坐标
+     * @returns {number}
+     */
+    get x() {
+        const ret = wasm.__wbg_get_strokepoint_x(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * Y 坐标
+     * @returns {number}
+     */
+    get y() {
+        const ret = wasm.__wbg_get_strokepoint_y(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 压感（0.0 - 1.0）
+     * @param {number} arg0
+     */
+    set pressure(arg0) {
+        wasm.__wbg_set_strokepoint_pressure(this.__wbg_ptr, arg0);
+    }
+    /**
+     * 时间戳（毫秒）
+     * @param {bigint} arg0
+     */
+    set timestamp(arg0) {
+        wasm.__wbg_set_strokepoint_timestamp(this.__wbg_ptr, arg0);
+    }
+    /**
+     * X 坐标
+     * @param {number} arg0
+     */
+    set x(arg0) {
+        wasm.__wbg_set_strokepoint_x(this.__wbg_ptr, arg0);
+    }
+    /**
+     * Y 坐标
+     * @param {number} arg0
+     */
+    set y(arg0) {
+        wasm.__wbg_set_strokepoint_y(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @param {number} x
+     * @param {number} y
+     * @param {number} pressure
+     * @param {bigint} timestamp
+     */
+    constructor(x, y, pressure, timestamp) {
+        const ret = wasm.strokepoint_new(x, y, pressure, timestamp);
+        this.__wbg_ptr = ret >>> 0;
+        StrokePointFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+}
+if (Symbol.dispose) StrokePoint.prototype[Symbol.dispose] = StrokePoint.prototype.free;
+
+/**
  * Add randomized noise to an image.
  * This function adds a Gaussian Noise Sample to each pixel through incrementing each channel by a randomized offset.
  * This randomized offset is generated by creating a randomized thread pool.
@@ -1195,6 +2263,33 @@ export const SamplingFilter = Object.freeze({
 export function add_noise_rand(photon_image) {
     _assertClass(photon_image, PhotonImage);
     wasm.add_noise_rand(photon_image.__wbg_ptr);
+}
+
+/**
+ * Add random noise to an image using parallel processing.
+ *
+ * This is the parallel version of the noise addition operation.
+ * Each thread uses its own random number generator to avoid contention.
+ *
+ * # Arguments
+ * * `photon_image` - A mutable reference to a PhotonImage.
+ * * `strength` - Noise strength. Range: 0.0 to 10.0.
+ *
+ * # Example
+ *
+ * ```no_run
+ * use photon_rs::parallel::add_noise_rand_parallel;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * add_noise_rand_parallel(&mut img, 2.0);
+ * ```
+ * @param {PhotonImage} photon_image
+ * @param {number} strength
+ */
+export function add_noise_rand_parallel(photon_image, strength) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.add_noise_rand_parallel(photon_image.__wbg_ptr, strength);
 }
 
 /**
@@ -1254,6 +2349,32 @@ export function adjust_brightness(photon_image, brightness) {
 }
 
 /**
+ * Apply brightness adjustment using parallel processing.
+ *
+ * This is the parallel version of the brightness adjustment operation.
+ *
+ * # Arguments
+ * * `photon_image` - A mutable reference to a PhotonImage.
+ * * `brightness` - The amount to adjust brightness by (-255 to 255).
+ *
+ * # Example
+ *
+ * ```no_run
+ * use photon_rs::parallel::adjust_brightness_parallel;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * adjust_brightness_parallel(&mut img, 20);
+ * ```
+ * @param {PhotonImage} photon_image
+ * @param {number} brightness
+ */
+export function adjust_brightness_parallel(photon_image, brightness) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.adjust_brightness_parallel(photon_image.__wbg_ptr, brightness);
+}
+
+/**
  * Adjust the contrast of an image by a factor.
  *
  * # Arguments
@@ -1275,6 +2396,32 @@ export function adjust_brightness(photon_image, brightness) {
 export function adjust_contrast(photon_image, contrast) {
     _assertClass(photon_image, PhotonImage);
     wasm.adjust_contrast(photon_image.__wbg_ptr, contrast);
+}
+
+/**
+ * Apply contrast adjustment using parallel processing.
+ *
+ * This is the parallel version of the contrast adjustment operation.
+ *
+ * # Arguments
+ * * `photon_image` - A mutable reference to a PhotonImage.
+ * * `contrast` - Contrast factor between [-255.0, 255.0].
+ *
+ * # Example
+ *
+ * ```no_run
+ * use photon_rs::parallel::adjust_contrast_parallel;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * adjust_contrast_parallel(&mut img, 30.0);
+ * ```
+ * @param {PhotonImage} photon_image
+ * @param {number} contrast
+ */
+export function adjust_contrast_parallel(photon_image, contrast) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.adjust_contrast_parallel(photon_image.__wbg_ptr, contrast);
 }
 
 /**
@@ -1465,6 +2612,49 @@ export function apply_gradient(image) {
 }
 
 /**
+ * 应用遮罩到图像
+ * @param {Uint8Array} image_bytes
+ * @param {Uint8Array} mask
+ * @param {number} width
+ * @param {number} height
+ */
+export function apply_mask_to_image(image_bytes, mask, width, height) {
+    var ptr0 = passArray8ToWasm0(image_bytes, wasm.__wbindgen_export);
+    var len0 = WASM_VECTOR_LEN;
+    const ptr1 = passArray8ToWasm0(mask, wasm.__wbindgen_export);
+    const len1 = WASM_VECTOR_LEN;
+    wasm.apply_mask_to_image(ptr0, len0, addHeapObject(image_bytes), ptr1, len1, width, height);
+}
+
+/**
+ * 自动抠图 - 基于颜色的智能抠图
+ * @param {Uint8Array} image_bytes
+ * @param {number} width
+ * @param {number} height
+ * @param {number} target_r
+ * @param {number} target_g
+ * @param {number} target_b
+ * @param {number} tolerance
+ * @param {number} feather_radius
+ * @returns {Uint8Array}
+ */
+export function auto_crop_by_color(image_bytes, width, height, target_r, target_g, target_b, tolerance, feather_radius) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passArray8ToWasm0(image_bytes, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.auto_crop_by_color(retptr, ptr0, len0, width, height, target_r, target_g, target_b, tolerance, feather_radius);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v2 = getArrayU8FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export4(r0, r1 * 1, 1);
+        return v2;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+/**
  * Convert an image to grayscale by setting a pixel's 3 RGB values to the Blue channel's value.
  *
  * # Arguments
@@ -1520,6 +2710,175 @@ export function base64_to_vec(base64) {
 }
 
 /**
+ * Batch process multiple images efficiently.
+ *
+ * This function processes multiple images in a single call, reducing
+ * JavaScript-WASM bridge overhead.
+ *
+ * # Arguments
+ * * `images` - An array of PhotonImage objects.
+ * * `processor` - A function that processes a single image.
+ *
+ * # Example
+ *
+ * ```javascript
+ * import { batch_process_images } from 'photon_rs';
+ *
+ * const images = [
+ *     img1,
+ *     img2,
+ *     img3
+ * ];
+ *
+ * batch_process_images(images, (img) => {
+ *     // Apply processing to each image
+ *     return processImage(img);
+ * });
+ * ```
+ * @param {Array<any>} images
+ * @param {Function} processor
+ * @returns {Array<any>}
+ */
+export function batch_process_images(images, processor) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.batch_process_images(retptr, addHeapObject(images), addBorrowedObject(processor));
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+        if (r2) {
+            throw takeObject(r1);
+        }
+        return takeObject(r0);
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+        heap[stack_pointer++] = undefined;
+    }
+}
+
+/**
+ * Apply bilateral filter to an image.
+ *
+ * Bilateral filter is a non-linear, edge-preserving, and noise-reducing smoothing filter.
+ * Unlike Gaussian blur, it preserves edges while smoothing homogeneous regions.
+ *
+ * # Algorithm Selection
+ * - When `fast_mode=true`: Uses Domain Transform algorithm (O(n) complexity, 10-50x faster)
+ * - When `fast_mode=false`: Uses standard bilateral filter with pre-computed weights (O(n*k²) complexity)
+ *
+ * # Performance Optimizations
+ * Fast mode (Domain Transform):
+ * - Time Complexity: O(n) - independent of kernel size
+ * - Space Complexity: O(n)
+ * - Typical Speedup: 10-50x compared to standard mode
+ *
+ * Standard mode:
+ * - Pre-computed spatial weights: O(1) lookup instead of exp() calculation
+ * - Pre-computed range weights: O(1) lookup for color similarity
+ * - Direct pixel access: Avoids expensive get_pixel() calls
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage to filter
+ * * `sigma_spatial` - Spatial domain standard deviation (controls smoothing radius)
+ * * `sigma_range` - Range domain standard deviation (controls edge sensitivity)
+ * * `fast_mode` - When true, uses fast Domain Transform algorithm (default: true for performance)
+ *
+ * # Example
+ *
+ * ```no_run
+ * use photon_rs::conv::bilateral_filter;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * // Fast mode (recommended for most use cases)
+ * bilateral_filter(&mut img, 5.0, 30.0, true);
+ * // Standard mode (when quality is paramount)
+ * bilateral_filter(&mut img, 5.0, 30.0, false);
+ * ```
+ * @param {PhotonImage} photon_image
+ * @param {number} sigma_spatial
+ * @param {number} sigma_range
+ * @param {boolean} fast_mode
+ */
+export function bilateral_filter(photon_image, sigma_spatial, sigma_range, fast_mode) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.bilateral_filter(photon_image.__wbg_ptr, sigma_spatial, sigma_range, fast_mode);
+}
+
+/**
+ * Fast bilateral filter using Domain Transform.
+ *
+ * This implementation uses the Domain Transform technique, which achieves O(n) complexity
+ * instead of O(n*k²) for the standard bilateral filter. It's particularly effective for
+ * real-time applications and large images.
+ *
+ * The algorithm works by:
+ * 1. Computing color-based distances between adjacent pixels
+ * 2. Applying recursive filtering along horizontal and vertical passes
+ * 3. Using a reference image to guide the filtering
+ *
+ * # Performance Characteristics
+ * - Time Complexity: O(n) where n is the number of pixels
+ * - Space Complexity: O(n) for temporary buffers
+ * - Typical Speedup: 10-50x compared to standard bilateral filter
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage to filter
+ * * `sigma_spatial` - Spatial domain standard deviation (controls smoothing radius)
+ * * `sigma_range` - Range domain standard deviation (controls edge sensitivity)
+ *
+ * # Example
+ *
+ * ```no_run
+ * use photon_rs::conv::bilateral_filter_fast;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * bilateral_filter_fast(&mut img, 5.0, 30.0);
+ * ```
+ * @param {PhotonImage} photon_image
+ * @param {number} sigma_spatial
+ * @param {number} sigma_range
+ */
+export function bilateral_filter_fast(photon_image, sigma_spatial, sigma_range) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.bilateral_filter_fast(photon_image.__wbg_ptr, sigma_spatial, sigma_range);
+}
+
+/**
+ * Fast bilateral filter with adjustable iterations.
+ *
+ * This is a more flexible version of bilateral_filter_fast that allows
+ * control over the number of filtering iterations. More iterations
+ * produce stronger smoothing at the cost of additional computation.
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage to filter
+ * * `sigma_spatial` - Spatial domain standard deviation (controls smoothing radius)
+ * * `sigma_range` - Range domain standard deviation (controls edge sensitivity)
+ * * `iterations` - Number of filtering iterations (1-10, default 3)
+ *
+ * # Example
+ *
+ * ```no_run
+ * use photon_rs::conv::bilateral_filter_fast_iter;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * // 5 iterations for stronger smoothing
+ * bilateral_filter_fast_iter(&mut img, 5.0, 30.0, 5);
+ * ```
+ * @param {PhotonImage} photon_image
+ * @param {number} sigma_spatial
+ * @param {number} sigma_range
+ * @param {number} iterations
+ */
+export function bilateral_filter_fast_iter(photon_image, sigma_spatial, sigma_range, iterations) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.bilateral_filter_fast_iter(photon_image.__wbg_ptr, sigma_spatial, sigma_range, iterations);
+}
+
+/**
  * Blend two images together.
  *
  * The `blend_mode` (3rd param) determines which blending mode to use; change this for varying effects.
@@ -1553,6 +2912,50 @@ export function blend(photon_image, photon_image2, blend_mode) {
     const ptr0 = passStringToWasm0(blend_mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
     const len0 = WASM_VECTOR_LEN;
     wasm.blend(photon_image.__wbg_ptr, photon_image2.__wbg_ptr, ptr0, len0);
+}
+
+/**
+ * Adaptive blend function that automatically selects the optimal algorithm
+ * based on image size.
+ *
+ * - For small images: Uses the standard blend function for maximum compatibility
+ * - For medium/large images: Uses the fast version that works directly on raw pixels
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage.
+ * * `photon_image2` - The 2nd PhotonImage to be blended with the first.
+ * * `blend_mode` - The blending mode to use.
+ * @param {PhotonImage} photon_image
+ * @param {PhotonImage} photon_image2
+ * @param {string} blend_mode
+ */
+export function blend_adaptive(photon_image, photon_image2, blend_mode) {
+    _assertClass(photon_image, PhotonImage);
+    _assertClass(photon_image2, PhotonImage);
+    const ptr0 = passStringToWasm0(blend_mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.blend_adaptive(photon_image.__wbg_ptr, photon_image2.__wbg_ptr, ptr0, len0);
+}
+
+/**
+ * Optimized version of blend function that works directly on raw pixel data.
+ * This avoids creating DynamicImage objects multiple times and reduces memory allocations.
+ * Provides 1.3-1.5x performance improvement over the standard blend function.
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage.
+ * * `photon_image2` - The 2nd PhotonImage to be blended with the first.
+ * * `blend_mode` - The blending mode to use.
+ * @param {PhotonImage} photon_image
+ * @param {PhotonImage} photon_image2
+ * @param {string} blend_mode
+ */
+export function blend_fast(photon_image, photon_image2, blend_mode) {
+    _assertClass(photon_image, PhotonImage);
+    _assertClass(photon_image2, PhotonImage);
+    const ptr0 = passStringToWasm0(blend_mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.blend_fast(photon_image.__wbg_ptr, photon_image2.__wbg_ptr, ptr0, len0);
 }
 
 /**
@@ -1682,6 +3085,30 @@ export function colorize(photon_image) {
 }
 
 /**
+ * 创建圆形遮罩（带抗锯齿）
+ * @param {number} width
+ * @param {number} height
+ * @param {number} center_x
+ * @param {number} center_y
+ * @param {number} radius
+ * @param {number} feather_radius
+ * @returns {Uint8Array}
+ */
+export function create_circular_mask(width, height, center_x, center_y, radius, feather_radius) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.create_circular_mask(retptr, width, height, center_x, center_y, radius, feather_radius);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v1 = getArrayU8FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export4(r0, r1 * 1, 1);
+        return v1;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+/**
  * @param {number} width
  * @param {number} height
  * @returns {PhotonImage}
@@ -1689,6 +3116,39 @@ export function colorize(photon_image) {
 export function create_gradient(width, height) {
     const ret = wasm.create_gradient(width, height);
     return PhotonImage.__wrap(ret);
+}
+
+/**
+ * 创建多边形遮罩
+ *
+ * # 参数
+ * * `width` - 图像宽度
+ * * `height` - 图像高度
+ * * `vertices` - 多边形顶点坐标数组 [x1, y1, x2, y2, ...]
+ * * `anti_aliased` - 是否启用抗锯齿
+ *
+ * # 返回
+ * 遮罩像素数据（灰度图，每个像素 1 字节）
+ * @param {number} width
+ * @param {number} height
+ * @param {Float32Array} vertices
+ * @param {boolean} anti_aliased
+ * @returns {Uint8Array}
+ */
+export function create_polygon_mask(width, height, vertices, anti_aliased) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passArrayF32ToWasm0(vertices, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.create_polygon_mask(retptr, width, height, ptr0, len0, anti_aliased);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v2 = getArrayU8FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export4(r0, r1 * 1, 1);
+        return v2;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
 }
 
 /**
@@ -2161,6 +3621,32 @@ export function dither(photon_image, depth) {
 }
 
 /**
+ * Applies Ordered Dithering (Bayer Matrix) to an image.
+ * This is faster than Floyd-Steinberg dithering and produces better results for some images.
+ * Only RGB channels are processed, alpha remains unchanged.
+ * # Arguments
+ * * `photon_image` - A PhotonImage that contains a view into the image.
+ * * `depth` - bits per channel. Clamped between 1 and 8.
+ * # Example
+ *
+ * ```no_run
+ * // For example, to turn an image of type `PhotonImage` into a dithered image:
+ * use photon_rs::effects::dither_ordered;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * let depth = 1;
+ * dither_ordered(&mut img, depth);
+ * ```
+ * @param {PhotonImage} photon_image
+ * @param {number} depth
+ */
+export function dither_ordered(photon_image, depth) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.dither_ordered(photon_image.__wbg_ptr, depth);
+}
+
+/**
  * Greyscale effect with increased contrast.
  *
  * # Arguments
@@ -2183,8 +3669,6 @@ export function dramatic(img) {
 
 /**
  * Add text to an image.
- * The only font available as of now is Roboto.
- * Note: A graphic design/text-drawing library is currently being developed, so stay tuned.
  *
  * # Arguments
  * * `photon_image` - A PhotonImage.
@@ -2192,6 +3676,7 @@ export function dramatic(img) {
  * * `x` - x-coordinate of where first letter's 1st pixel should be drawn.
  * * `y` - y-coordinate of where first letter's 1st pixel should be drawn.
  * * `font_size` - Font size in pixels of the text to be drawn.
+ * * `font_name` - Name of the registered font to use.
  *
  * # Example
  *
@@ -2202,25 +3687,28 @@ export function dramatic(img) {
  *
  * // Open the image. A PhotonImage is returned.
  * let mut img = open_image("img.jpg").expect("File should open");
- * draw_text(&mut img, "Welcome to Photon!", 10_i32, 10_i32, 90_f32);
+ * // Make sure to register a font first
+ * photon_rs::text::register_font("my-font", font_data);
+ * draw_text(&mut img, "Welcome to Photon!", 10_i32, 10_i32, 90_f32, "my-font");
  * ```
  * @param {PhotonImage} photon_img
  * @param {string} text
  * @param {number} x
  * @param {number} y
  * @param {number} font_size
+ * @param {string} font_name
  */
-export function draw_text(photon_img, text, x, y, font_size) {
+export function draw_text(photon_img, text, x, y, font_size, font_name) {
     _assertClass(photon_img, PhotonImage);
     const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
     const len0 = WASM_VECTOR_LEN;
-    wasm.draw_text(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size);
+    const ptr1 = passStringToWasm0(font_name, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len1 = WASM_VECTOR_LEN;
+    wasm.draw_text(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, ptr1, len1);
 }
 
 /**
  * Add bordered-text to an image.
- * The only font available as of now is Roboto.
- * Note: A graphic design/text-drawing library is currently being developed, so stay tuned.
  *
  * # Arguments
  * * `photon_image` - A PhotonImage.
@@ -2228,6 +3716,7 @@ export function draw_text(photon_img, text, x, y, font_size) {
  * * `x` - x-coordinate of where first letter's 1st pixel should be drawn.
  * * `y` - y-coordinate of where first letter's 1st pixel should be drawn.
  * * `font_size` - Font size in pixels of the text to be drawn.
+ * * `font_name` - Name of the registered font to use.
  *
  * # Example
  *
@@ -2238,24 +3727,28 @@ export function draw_text(photon_img, text, x, y, font_size) {
  *
  * // Open the image. A PhotonImage is returned.
  * let mut img = open_image("img.jpg").expect("File should open");
- * draw_text_with_border(&mut img, "Welcome to Photon!", 10_i32, 10_i32, 90_f32);
+ * // Make sure to register a font first
+ * photon_rs::text::register_font("my-font", font_data);
+ * draw_text_with_border(&mut img, "Welcome to Photon!", 10_i32, 10_i32, 90_f32, "my-font");
  * ```
  * @param {PhotonImage} photon_img
  * @param {string} text
  * @param {number} x
  * @param {number} y
  * @param {number} font_size
+ * @param {string} font_name
  */
-export function draw_text_with_border(photon_img, text, x, y, font_size) {
+export function draw_text_with_border(photon_img, text, x, y, font_size, font_name) {
     _assertClass(photon_img, PhotonImage);
     const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
     const len0 = WASM_VECTOR_LEN;
-    wasm.draw_text_with_border(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size);
+    const ptr1 = passStringToWasm0(font_name, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len1 = WASM_VECTOR_LEN;
+    wasm.draw_text_with_border(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, ptr1, len1);
 }
 
 /**
  * Add bordered-text to an image with custom color.
- * The only font available as of now is Roboto.
  *
  * # Arguments
  * * `photon_image` - A PhotonImage.
@@ -2266,6 +3759,7 @@ export function draw_text_with_border(photon_img, text, x, y, font_size) {
  * * `r` - Red channel (0-255).
  * * `g` - Green channel (0-255).
  * * `b` - Blue channel (0-255).
+ * * `font_name` - Name of the registered font to use.
  *
  * # Example
  *
@@ -2275,7 +3769,9 @@ export function draw_text_with_border(photon_img, text, x, y, font_size) {
  * use photon_rs::text::draw_text_with_border_and_color;
  *
  * let mut img = open_image("img.jpg").expect("File should open");
- * draw_text_with_border_and_color(&mut img, "Hello!", 10_i32, 10_i32, 90_f32, 255u8, 0u8, 0u8);
+ * // Make sure to register a font first
+ * photon_rs::text::register_font("my-font", font_data);
+ * draw_text_with_border_and_color(&mut img, "Hello!", 10_i32, 10_i32, 90_f32, 255u8, 0u8, 0u8, "my-font");
  * ```
  * @param {PhotonImage} photon_img
  * @param {string} text
@@ -2285,52 +3781,19 @@ export function draw_text_with_border(photon_img, text, x, y, font_size) {
  * @param {number} r
  * @param {number} g
  * @param {number} b
+ * @param {string} font_name
  */
-export function draw_text_with_border_and_color(photon_img, text, x, y, font_size, r, g, b) {
+export function draw_text_with_border_and_color(photon_img, text, x, y, font_size, r, g, b, font_name) {
     _assertClass(photon_img, PhotonImage);
     const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
     const len0 = WASM_VECTOR_LEN;
-    wasm.draw_text_with_border_and_color(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b);
-}
-
-/**
- * Add bordered-text to an image with custom color and specified font type.
- * @param {PhotonImage} photon_img
- * @param {string} text
- * @param {number} x
- * @param {number} y
- * @param {number} font_size
- * @param {number} r
- * @param {number} g
- * @param {number} b
- * @param {FontType} font_type
- */
-export function draw_text_with_border_and_color_and_font(photon_img, text, x, y, font_size, r, g, b, font_type) {
-    _assertClass(photon_img, PhotonImage);
-    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-    const len0 = WASM_VECTOR_LEN;
-    wasm.draw_text_with_border_and_color_and_font(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b, font_type);
-}
-
-/**
- * Add bordered-text to an image with specified font type.
- * @param {PhotonImage} photon_img
- * @param {string} text
- * @param {number} x
- * @param {number} y
- * @param {number} font_size
- * @param {FontType} font_type
- */
-export function draw_text_with_border_with_font(photon_img, text, x, y, font_size, font_type) {
-    _assertClass(photon_img, PhotonImage);
-    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-    const len0 = WASM_VECTOR_LEN;
-    wasm.draw_text_with_border_with_font(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, font_type);
+    const ptr1 = passStringToWasm0(font_name, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len1 = WASM_VECTOR_LEN;
+    wasm.draw_text_with_border_and_color(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b, ptr1, len1);
 }
 
 /**
  * Add text to an image with custom color.
- * The only font available as of now is Roboto.
  *
  * # Arguments
  * * `photon_image` - A PhotonImage.
@@ -2341,6 +3804,7 @@ export function draw_text_with_border_with_font(photon_img, text, x, y, font_siz
  * * `r` - Red channel (0-255).
  * * `g` - Green channel (0-255).
  * * `b` - Blue channel (0-255).
+ * * `font_name` - Name of the registered font to use.
  *
  * # Example
  *
@@ -2350,7 +3814,9 @@ export function draw_text_with_border_with_font(photon_img, text, x, y, font_siz
  * use photon_rs::text::draw_text_with_color;
  *
  * let mut img = open_image("img.jpg").expect("File should open");
- * draw_text_with_color(&mut img, "Hello!", 10_i32, 10_i32, 90_f32, 255u8, 0u8, 0u8);
+ * // Make sure to register a font first
+ * photon_rs::text::register_font("my-font", font_data);
+ * draw_text_with_color(&mut img, "Hello!", 10_i32, 10_i32, 90_f32, 255u8, 0u8, 0u8, "my-font");
  * ```
  * @param {PhotonImage} photon_img
  * @param {string} text
@@ -2360,47 +3826,15 @@ export function draw_text_with_border_with_font(photon_img, text, x, y, font_siz
  * @param {number} r
  * @param {number} g
  * @param {number} b
+ * @param {string} font_name
  */
-export function draw_text_with_color(photon_img, text, x, y, font_size, r, g, b) {
+export function draw_text_with_color(photon_img, text, x, y, font_size, r, g, b, font_name) {
     _assertClass(photon_img, PhotonImage);
     const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
     const len0 = WASM_VECTOR_LEN;
-    wasm.draw_text_with_color(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b);
-}
-
-/**
- * Add text to an image with custom color and specified font type.
- * @param {PhotonImage} photon_img
- * @param {string} text
- * @param {number} x
- * @param {number} y
- * @param {number} font_size
- * @param {number} r
- * @param {number} g
- * @param {number} b
- * @param {FontType} font_type
- */
-export function draw_text_with_color_and_font(photon_img, text, x, y, font_size, r, g, b, font_type) {
-    _assertClass(photon_img, PhotonImage);
-    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-    const len0 = WASM_VECTOR_LEN;
-    wasm.draw_text_with_color_and_font(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b, font_type);
-}
-
-/**
- * Add text to an image with specified font type.
- * @param {PhotonImage} photon_img
- * @param {string} text
- * @param {number} x
- * @param {number} y
- * @param {number} font_size
- * @param {FontType} font_type
- */
-export function draw_text_with_font(photon_img, text, x, y, font_size, font_type) {
-    _assertClass(photon_img, PhotonImage);
-    const ptr0 = passStringToWasm0(text, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-    const len0 = WASM_VECTOR_LEN;
-    wasm.draw_text_with_font(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, font_type);
+    const ptr1 = passStringToWasm0(font_name, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len1 = WASM_VECTOR_LEN;
+    wasm.draw_text_with_color(photon_img.__wbg_ptr, ptr0, len0, x, y, font_size, r, g, b, ptr1, len1);
 }
 
 /**
@@ -2781,9 +4215,13 @@ export function gamma_correction(photon_image, red, green, blue) {
  *
  * Reference: http://blog.ivank.net/fastest-gaussian-blur.html
  *
+ * This implementation uses a separable box blur approximation for optimal performance,
+ * especially effective for large blur radii. The algorithm approximates Gaussian blur
+ * by applying three successive box blurs with carefully calculated radii.
+ *
  * # Arguments
  * * `photon_image` - A PhotonImage
- * * `radius` - blur radius
+ * * `radius` - blur radius (larger values create more blur)
  * # Example
  *
  * ```no_run
@@ -2799,6 +4237,114 @@ export function gamma_correction(photon_image, red, green, blue) {
 export function gaussian_blur(photon_image, radius) {
     _assertClass(photon_image, PhotonImage);
     wasm.gaussian_blur(photon_image.__wbg_ptr, radius);
+}
+
+/**
+ * Fast separable Gaussian blur using SIMD optimization.
+ *
+ * This is an optimized version of Gaussian blur that uses SIMD instructions
+ * for better performance on modern CPUs and WebAssembly. It's particularly
+ * effective for large blur radii and large images.
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage
+ * * `radius` - blur radius (larger values create more blur)
+ * # Example
+ *
+ * ```no_run
+ * use photon_rs::conv::gaussian_blur_fast;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * gaussian_blur_fast(&mut img, 5_i32);
+ * ```
+ * @param {PhotonImage} photon_image
+ * @param {number} radius
+ */
+export function gaussian_blur_fast(photon_image, radius) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.gaussian_blur_fast(photon_image.__wbg_ptr, radius);
+}
+
+/**
+ * Apply Gaussian blur using parallel processing for better performance on multi-core systems.
+ *
+ * This is the parallel-optimized version of `gaussian_blur`. It uses Rayon to process
+ * the image in parallel, which can provide 2-4x speedup on multi-core CPUs.
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage to blur
+ * * `radius` - Blur radius (larger values create more blur)
+ *
+ * # Example
+ *
+ * ```no_run
+ * use photon_rs::conv::gaussian_blur_parallel;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * gaussian_blur_parallel(&mut img, 5_i32);
+ * ```
+ * @param {PhotonImage} photon_image
+ * @param {number} radius
+ */
+export function gaussian_blur_parallel(photon_image, radius) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.gaussian_blur_parallel(photon_image.__wbg_ptr, radius);
+}
+
+/**
+ * Tiled Gaussian blur for better cache locality on large images.
+ *
+ * This implementation processes the image in tiles to improve cache performance,
+ * especially for large images. Each tile is processed independently, with proper
+ * handling of tile boundaries.
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage
+ * * `radius` - blur radius
+ * * `tile_size` - Size of each tile (default 256 for good cache performance)
+ *
+ * # Example
+ *
+ * ```no_run
+ * use photon_rs::conv::gaussian_blur_tiled;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * gaussian_blur_tiled(&mut img, 5_i32, 256);
+ * ```
+ * @param {PhotonImage} photon_image
+ * @param {number} radius
+ * @param {number} tile_size
+ */
+export function gaussian_blur_tiled(photon_image, radius, tile_size) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.gaussian_blur_tiled(photon_image.__wbg_ptr, radius, tile_size);
+}
+
+/**
+ * 获取默认字体名称
+ *
+ * # 返回
+ * 返回默认字体的名称字符串
+ * @returns {string}
+ */
+export function get_default_font_name() {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.get_default_font_name(retptr);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        deferred1_0 = r0;
+        deferred1_1 = r1;
+        return getStringFromWasm0(r0, r1);
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+        wasm.__wbindgen_export4(deferred1_0, deferred1_1, 1);
+    }
 }
 
 /**
@@ -2880,6 +4426,31 @@ export function grayscale(img) {
 export function grayscale_human_corrected(img) {
     _assertClass(img, PhotonImage);
     wasm.grayscale_human_corrected(img.__wbg_ptr);
+}
+
+/**
+ * Convert an image to grayscale using parallel processing.
+ *
+ * This is the parallel version of the grayscale operation.
+ * Uses human-corrected luminance formula: 0.3*R + 0.59*G + 0.11*B
+ *
+ * # Arguments
+ * * `photon_image` - A mutable reference to a PhotonImage.
+ *
+ * # Example
+ *
+ * ```no_run
+ * use photon_rs::parallel::grayscale_parallel;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * grayscale_parallel(&mut img);
+ * ```
+ * @param {PhotonImage} photon_image
+ */
+export function grayscale_parallel(photon_image) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.grayscale_parallel(photon_image.__wbg_ptr);
 }
 
 /**
@@ -2977,6 +4548,10 @@ export function horizontal_strips(photon_image, num_strips) {
  * let mut img = open_image("img.jpg").expect("File should open");
  * hsl(&mut img, "saturate", 0.1_f32);
  * ```
+ *
+ * # Performance
+ * This function now uses SIMD-optimized algorithms internally for better performance (1.5-2x improvement).
+ * For maximum accuracy with small images, use `hsl_with_palette()` instead.
  * @param {PhotonImage} photon_image
  * @param {string} mode
  * @param {number} amt
@@ -2986,6 +4561,90 @@ export function hsl(photon_image, mode, amt) {
     const ptr0 = passStringToWasm0(mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
     const len0 = WASM_VECTOR_LEN;
     wasm.hsl(photon_image.__wbg_ptr, ptr0, len0, amt);
+}
+
+/**
+ * Adaptive HSL color space manipulation that automatically selects the optimal algorithm
+ * based on image size.
+ *
+ * - For small images: Uses the standard palette library for maximum accuracy
+ * - For medium/large images: Uses the fast version with optimized conversion algorithms
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage.
+ * * `mode` - The effect desired: "saturate", "desaturate", "lighten", "darken", "shift_hue"
+ * * `amt` - A float value from 0 to 1.
+ * @param {PhotonImage} photon_image
+ * @param {string} mode
+ * @param {number} amt
+ */
+export function hsl_adaptive(photon_image, mode, amt) {
+    _assertClass(photon_image, PhotonImage);
+    const ptr0 = passStringToWasm0(mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.hsl_adaptive(photon_image.__wbg_ptr, ptr0, len0, amt);
+}
+
+/**
+ * Adaptive HSL function that automatically selects the optimal algorithm
+ * based on image size and available optimizations.
+ *
+ * - For small images: Uses the standard palette library for maximum accuracy
+ * - For medium images: Uses the fast version with optimized conversion algorithms
+ * - For large images: Uses the SIMD version for maximum performance
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage.
+ * * `mode` - The effect desired: "saturate", "desaturate", "lighten", "darken", "shift_hue"
+ * * `amt` - A float value from 0 to 1.
+ * @param {PhotonImage} photon_image
+ * @param {string} mode
+ * @param {number} amt
+ */
+export function hsl_auto(photon_image, mode, amt) {
+    _assertClass(photon_image, PhotonImage);
+    const ptr0 = passStringToWasm0(mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.hsl_auto(photon_image.__wbg_ptr, ptr0, len0, amt);
+}
+
+/**
+ * Optimized version of HSL color space manipulation using pre-computed lookup tables.
+ * This provides 1.5-2x performance improvement over the standard version for saturation and lightness operations.
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage.
+ * * `mode` - The effect desired: "saturate", "desaturate", "lighten", "darken", "shift_hue"
+ * * `amt` - A float value from 0 to 1.
+ * @param {PhotonImage} photon_image
+ * @param {string} mode
+ * @param {number} amt
+ */
+export function hsl_fast(photon_image, mode, amt) {
+    _assertClass(photon_image, PhotonImage);
+    const ptr0 = passStringToWasm0(mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.hsl_fast(photon_image.__wbg_ptr, ptr0, len0, amt);
+}
+
+/**
+ * HSL color space manipulation using the palette library for maximum accuracy.
+ * This is slower than the default `hsl()` function but provides more accurate color conversions.
+ * Use this for small images where accuracy is more important than performance.
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage.
+ * * `mode` - The effect desired to be applied. Choose from: `saturate`, `desaturate`, `shift_hue`, `darken`, `lighten`
+ * * `amt` - A float value from 0 to 1 which represents the amount the effect should be increased by.
+ * @param {PhotonImage} photon_image
+ * @param {string} mode
+ * @param {number} amt
+ */
+export function hsl_with_palette(photon_image, mode, amt) {
+    _assertClass(photon_image, PhotonImage);
+    const ptr0 = passStringToWasm0(mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.hsl_with_palette(photon_image.__wbg_ptr, ptr0, len0, amt);
 }
 
 /**
@@ -3057,6 +4716,85 @@ export function hsv(photon_image, mode, amt) {
     const ptr0 = passStringToWasm0(mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
     const len0 = WASM_VECTOR_LEN;
     wasm.hsv(photon_image.__wbg_ptr, ptr0, len0, amt);
+}
+
+/**
+ * Adaptive HSV color space manipulation that automatically selects the optimal algorithm
+ * based on image size.
+ *
+ * - For small images: Uses the standard palette library for maximum accuracy
+ * - For medium/large images: Uses the fast version with optimized conversion algorithms
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage.
+ * * `mode` - The effect desired: "saturate", "desaturate", "lighten", "darken", "shift_hue"
+ * * `amt` - A float value from 0 to 1.
+ * @param {PhotonImage} photon_image
+ * @param {string} mode
+ * @param {number} amt
+ */
+export function hsv_adaptive(photon_image, mode, amt) {
+    _assertClass(photon_image, PhotonImage);
+    const ptr0 = passStringToWasm0(mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.hsv_adaptive(photon_image.__wbg_ptr, ptr0, len0, amt);
+}
+
+/**
+ * Adaptive HSV function that automatically selects the optimal algorithm
+ * based on image size and available optimizations.
+ *
+ * - For small images: Uses the standard palette library for maximum accuracy
+ * - For medium images: Uses the fast version with optimized conversion algorithms
+ * - For large images: Uses the SIMD version for maximum performance
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage.
+ * * `mode` - The effect desired: "saturate", "desaturate", "lighten", "darken", "shift_hue"
+ * * `amt` - A float value from 0 to 1.
+ * @param {PhotonImage} photon_image
+ * @param {string} mode
+ * @param {number} amt
+ */
+export function hsv_auto(photon_image, mode, amt) {
+    _assertClass(photon_image, PhotonImage);
+    const ptr0 = passStringToWasm0(mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.hsv_auto(photon_image.__wbg_ptr, ptr0, len0, amt);
+}
+
+/**
+ * Optimized version of HSV color space manipulation using fast conversion algorithms.
+ * This provides 1.5-2x performance improvement over the standard version.
+ *
+ * # Arguments
+ * * `photon_image` - A PhotonImage.
+ * * `mode` - The effect desired: "saturate", "desaturate", "lighten", "darken", "shift_hue"
+ * * `amt` - A float value from 0 to 1.
+ * @param {PhotonImage} photon_image
+ * @param {string} mode
+ * @param {number} amt
+ */
+export function hsv_fast(photon_image, mode, amt) {
+    _assertClass(photon_image, PhotonImage);
+    const ptr0 = passStringToWasm0(mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.hsv_fast(photon_image.__wbg_ptr, ptr0, len0, amt);
+}
+
+/**
+ * HSV color space manipulation using the palette library for maximum accuracy.
+ * This is slower than the default `hsv()` function but provides more accurate color conversions.
+ * Use this for small images where accuracy is more important than performance.
+ * @param {PhotonImage} photon_image
+ * @param {string} mode
+ * @param {number} amt
+ */
+export function hsv_with_palette(photon_image, mode, amt) {
+    _assertClass(photon_image, PhotonImage);
+    const ptr0 = passStringToWasm0(mode, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.hsv_with_palette(photon_image.__wbg_ptr, ptr0, len0, amt);
 }
 
 /**
@@ -3206,6 +4944,43 @@ export function init() {
 }
 
 /**
+ * @param {number} num_threads
+ * @returns {Promise<any>}
+ */
+export function initThreadPool(num_threads) {
+    const ret = wasm.initThreadPool(num_threads);
+    return takeObject(ret);
+}
+
+/**
+ * Initialize the thread pool for parallel processing.
+ *
+ * This function should be called once at the beginning of your application
+ * when using parallel operations in WebAssembly.
+ *
+ * # Example
+ *
+ * ```no_run
+ * use photon_rs::parallel::init_parallel;
+ *
+ * // Initialize the thread pool (for WASM)
+ * init_parallel();
+ * ```
+ */
+export function init_parallel() {
+    wasm.init_parallel();
+}
+
+/**
+ * @param {number} num_threads
+ * @returns {Promise<void>}
+ */
+export function init_thread_pool(num_threads) {
+    const ret = wasm.init_thread_pool(num_threads);
+    return takeObject(ret);
+}
+
+/**
  * Invert RGB value of an image.
  *
  * # Arguments
@@ -3224,6 +4999,39 @@ export function init() {
 export function invert(photon_image) {
     _assertClass(photon_image, PhotonImage);
     wasm.invert(photon_image.__wbg_ptr);
+}
+
+/**
+ * Invert all colors in an image using parallel processing.
+ *
+ * This is the parallel version of the invert operation.
+ *
+ * # Arguments
+ * * `photon_image` - A mutable reference to a PhotonImage.
+ *
+ * # Example
+ *
+ * ```no_run
+ * use photon_rs::parallel::invert_parallel;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * invert_parallel(&mut img);
+ * ```
+ * @param {PhotonImage} photon_image
+ */
+export function invert_parallel(photon_image) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.invert_parallel(photon_image.__wbg_ptr);
+}
+
+/**
+ * 检查默认字体是否已初始化
+ * @returns {boolean}
+ */
+export function is_default_font_initialized() {
+    const ret = wasm.is_default_font_initialized();
+    return ret !== 0;
 }
 
 /**
@@ -3997,6 +5805,73 @@ export function pastel_pink(img) {
 }
 
 /**
+ * Create a PhotonImage from a Uint8ClampedArray with zero-copy.
+ *
+ * This function creates a PhotonImage directly from JavaScript's Uint8ClampedArray
+ * without copying the data, enabling efficient data transfer between JavaScript and WASM.
+ *
+ * # Arguments
+ * * `data` - A Uint8ClampedArray containing RGBA pixel data.
+ * * `width` - The image width.
+ * * `height` - The image height.
+ *
+ * # Example
+ *
+ * ```javascript
+ * import { PhotonImage } from 'photon_rs';
+ *
+ * const canvas = document.getElementById('myCanvas');
+ * const ctx = canvas.getContext('2d');
+ * const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+ *
+ * // Create PhotonImage without copying
+ * const photonImg = PhotonImage.from_uint8_array(imageData.data, canvas.width, canvas.height);
+ * ```
+ * @param {Uint8ClampedArray} data
+ * @param {number} width
+ * @param {number} height
+ * @returns {PhotonImage}
+ */
+export function photon_image_from_uint8_clamped_array(data, width, height) {
+    const ret = wasm.photon_image_from_uint8_clamped_array(addHeapObject(data), width, height);
+    return PhotonImage.__wrap(ret);
+}
+
+/**
+ * Get pixel data as a Uint8ClampedArray for efficient transfer to JavaScript.
+ *
+ * This function provides the image's pixel data as a Uint8ClampedArray,
+ * which can be directly used with Canvas API without additional copying.
+ *
+ * # Arguments
+ * * `img` - A reference to a PhotonImage.
+ *
+ * # Returns
+ * A Uint8ClampedArray containing the RGBA pixel data.
+ *
+ * # Example
+ *
+ * ```javascript
+ * import { PhotonImage } from 'photon_rs';
+ *
+ * const canvas = document.getElementById('myCanvas');
+ * const ctx = canvas.getContext('2d');
+ *
+ * // After processing an image
+ * const pixelData = photonImg.get_uint8_clamped_array();
+ * const imageData = new ImageData(pixelData, photonImg.width, photonImg.height);
+ * ctx.putImageData(imageData, 0, 0);
+ * ```
+ * @param {PhotonImage} img
+ * @returns {Uint8ClampedArray}
+ */
+export function photon_image_get_uint8_clamped_array(img) {
+    _assertClass(img, PhotonImage);
+    const ret = wasm.photon_image_get_uint8_clamped_array(img.__wbg_ptr);
+    return takeObject(ret);
+}
+
+/**
  * Add pink-tinted noise to an image.
  *
  * **[WASM SUPPORT IS AVAILABLE]**: Randomized thread pools cannot be created with WASM, but
@@ -4091,6 +5966,56 @@ export function primary(img) {
 }
 
 /**
+ * Process image data in-place for zero-copy operations.
+ *
+ * This function processes ImageData directly without creating intermediate
+ * PhotonImage objects, reducing memory allocations and copying.
+ *
+ * # Arguments
+ * * `image_data` - A mutable reference to ImageData.
+ * * `processor` - A function that processes the pixel data.
+ *
+ * # Example
+ *
+ * ```javascript
+ * import { process_image_data_inplace } from 'photon_rs';
+ *
+ * const canvas = document.getElementById('myCanvas');
+ * const ctx = canvas.getContext('2d');
+ * const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+ *
+ * // Process image data in-place
+ * process_image_data_inplace(imageData, (pixels, width, height) => {
+ *     // Custom processing logic
+ *     for (let i = 0; i < pixels.length; i += 4) {
+ *         pixels[i] = 255 - pixels[i];     // Invert R
+ *         pixels[i + 1] = 255 - pixels[i + 1]; // Invert G
+ *         pixels[i + 2] = 255 - pixels[i + 2]; // Invert B
+ *     }
+ * });
+ *
+ * ctx.putImageData(imageData, 0, 0);
+ * ```
+ * @param {ImageData} image_data
+ * @param {Function} processor
+ */
+export function process_image_data_inplace(image_data, processor) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.process_image_data_inplace(retptr, addBorrowedObject(image_data), addBorrowedObject(processor));
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        if (r1) {
+            throw takeObject(r0);
+        }
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+        heap[stack_pointer++] = undefined;
+        heap[stack_pointer++] = undefined;
+    }
+}
+
+/**
  * Place a PhotonImage onto a 2D canvas.
  * @param {HTMLCanvasElement} canvas
  * @param {CanvasRenderingContext2D} ctx
@@ -4122,6 +6047,19 @@ export function putImageData(canvas, ctx, new_image) {
 export function r_grayscale(photon_image) {
     _assertClass(photon_image, PhotonImage);
     wasm.r_grayscale(photon_image.__wbg_ptr);
+}
+
+/**
+ * 自动边缘优化 - 对遮罩进行平滑处理（使用可分离高斯模糊优化）
+ * @param {Uint8Array} mask
+ * @param {number} width
+ * @param {number} height
+ * @param {number} smoothing_radius
+ */
+export function refine_mask_edges(mask, width, height, smoothing_radius) {
+    var ptr0 = passArray8ToWasm0(mask, wasm.__wbindgen_export);
+    var len0 = WASM_VECTOR_LEN;
+    wasm.refine_mask_edges(ptr0, len0, addHeapObject(mask), width, height, smoothing_radius);
 }
 
 /**
@@ -4471,7 +6409,18 @@ export function saturate_lch(img, level) {
 /**
  * Resize image using seam carver.
  * Resize only if new dimensions are smaller, than original image.
- * # NOTE: This is still experimental feature, and pretty slow.
+ * # NOTE: This is an optimized parallel implementation with significant performance improvements.
+ *
+ * # Performance Improvements
+ * - **Parallel Energy Computation**: Uses Rayon for multi-threaded energy map calculation
+ * - **Batch Seam Removal**: Processes multiple seams in a single pass (up to 8 at a time)
+ * - **Reduced Memory Allocations**: Pre-allocates all necessary memory upfront
+ * - **Optimized Dynamic Programming**: Efficient min-path computation with SIMD-friendly patterns
+ * - **Smart Rotation Strategy**: Minimizes rotation operations for horizontal seams
+ *
+ * # Expected Performance
+ * - Native (Rayon): 2-4x faster than sequential version on multi-core systems
+ * - WASM (wasm-bindgen-rayon): 1.5-2.5x faster on browsers with thread support
  *
  * # Arguments
  * * `img` - A PhotonImage.
@@ -4869,6 +6818,9 @@ export function single_channel_grayscale(photon_image, channel) {
  * Each pixel is calculated as the magnitude of the horizontal and vertical components of the Sobel filter,
  * ie if X is the horizontal sobel and Y is the vertical, for each pixel, we calculate sqrt(X^2 + Y^2)
  *
+ * This optimized version calculates both horizontal and vertical gradients in a single pass,
+ * avoiding image cloning and reducing memory usage by 50%.
+ *
  * # Arguments
  * * `img` - A PhotonImage.
  *
@@ -5034,6 +6986,33 @@ export function threshold(img, threshold) {
 }
 
 /**
+ * Apply threshold operation using parallel processing.
+ *
+ * This is the parallel version of the threshold operation.
+ * Pixels above threshold become white (255), below become black (0).
+ *
+ * # Arguments
+ * * `photon_image` - A mutable reference to a PhotonImage.
+ * * `threshold` - The threshold value (0-255).
+ *
+ * # Example
+ *
+ * ```no_run
+ * use photon_rs::parallel::threshold_parallel;
+ * use photon_rs::native::open_image;
+ *
+ * let mut img = open_image("img.jpg").expect("File should open");
+ * threshold_parallel(&mut img, 128);
+ * ```
+ * @param {PhotonImage} photon_image
+ * @param {number} threshold
+ */
+export function threshold_parallel(photon_image, threshold) {
+    _assertClass(photon_image, PhotonImage);
+    wasm.threshold_parallel(photon_image.__wbg_ptr, threshold);
+}
+
+/**
  * Tint an image by adding an offset to averaged RGB channel values.
  *
  * # Arguments
@@ -5117,6 +7096,72 @@ export function vertical_strips(photon_image, num_strips) {
 }
 
 /**
+ * 在 WASM 环境中清空所有已注册的字体
+ */
+export function wasm_clear_fonts() {
+    wasm.wasm_clear_fonts();
+}
+
+/**
+ * 在 WASM 环境中获取已注册字体列表
+ * @returns {string[]}
+ */
+export function wasm_get_registered_fonts() {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.wasm_get_registered_fonts(retptr);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v1 = getArrayJsValueFromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export4(r0, r1 * 4, 4);
+        return v1;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+/**
+ * 在 WASM 环境中检查字体是否已注册
+ * @param {string} font_name
+ * @returns {boolean}
+ */
+export function wasm_is_font_registered(font_name) {
+    const ptr0 = passStringToWasm0(font_name, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.wasm_is_font_registered(ptr0, len0);
+    return ret !== 0;
+}
+
+/**
+ * 在 WASM 环境中注册字体
+ *
+ * # 参数
+ * * `font_name` - 字体名称，用于后续引用
+ * * `font_data` - 字体文件的二进制数据（Uint8Array）
+ * @param {string} font_name
+ * @param {Uint8Array} font_data
+ */
+export function wasm_register_font(font_name, font_data) {
+    const ptr0 = passStringToWasm0(font_name, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passArray8ToWasm0(font_data, wasm.__wbindgen_export);
+    const len1 = WASM_VECTOR_LEN;
+    wasm.wasm_register_font(ptr0, len0, ptr1, len1);
+}
+
+/**
+ * 在 WASM 环境中移除已注册的字体
+ * @param {string} font_name
+ * @returns {boolean}
+ */
+export function wasm_unregister_font(font_name) {
+    const ptr0 = passStringToWasm0(font_name, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.wasm_unregister_font(ptr0, len0);
+    return ret !== 0;
+}
+
+/**
  * Add a watermark to an image.
  *
  * # Arguments
@@ -5146,55 +7191,203 @@ export function watermark(img, watermark, x, y) {
     wasm.watermark(img.__wbg_ptr, watermark.__wbg_ptr, x, y);
 }
 
-function __wbg_get_imports() {
+/**
+ * Adaptive watermark function that automatically selects the optimal algorithm
+ * based on image size.
+ *
+ * - For small images: Uses the standard watermark function
+ * - For medium/large images: Uses the fast version that works directly on raw pixels
+ *
+ * # Arguments
+ * * `img` - A PhotonImage.
+ * * `watermark` - The watermark to be placed onto the `img` image.
+ * * `x` - The x coordinate where the watermark's top corner should be positioned.
+ * * `y` - The y coordinate where the watermark's top corner should be positioned.
+ * @param {PhotonImage} img
+ * @param {PhotonImage} watermark
+ * @param {bigint} x
+ * @param {bigint} y
+ */
+export function watermark_adaptive(img, watermark, x, y) {
+    _assertClass(img, PhotonImage);
+    _assertClass(watermark, PhotonImage);
+    wasm.watermark_adaptive(img.__wbg_ptr, watermark.__wbg_ptr, x, y);
+}
+
+/**
+ * Optimized version of watermark function that works directly on raw pixel data.
+ * Avoids creating DynamicImage objects multiple times.
+ *
+ * # Arguments
+ * * `img` - A PhotonImage.
+ * * `watermark` - The watermark to be placed onto the `img` image.
+ * * `x` - The x coordinate where the watermark's top corner should be positioned.
+ * * `y` - The y coordinate where the watermark's top corner should be positioned.
+ * @param {PhotonImage} img
+ * @param {PhotonImage} watermark
+ * @param {bigint} x
+ * @param {bigint} y
+ */
+export function watermark_fast(img, watermark, x, y) {
+    _assertClass(img, PhotonImage);
+    _assertClass(watermark, PhotonImage);
+    wasm.watermark_fast(img.__wbg_ptr, watermark.__wbg_ptr, x, y);
+}
+
+export class wbg_rayon_PoolBuilder {
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(wbg_rayon_PoolBuilder.prototype);
+        obj.__wbg_ptr = ptr;
+        wbg_rayon_PoolBuilderFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        wbg_rayon_PoolBuilderFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_wbg_rayon_poolbuilder_free(ptr, 0);
+    }
+    build() {
+        wasm.wbg_rayon_poolbuilder_build(this.__wbg_ptr);
+    }
+    /**
+     * @returns {number}
+     */
+    numThreads() {
+        const ret = wasm.wbg_rayon_poolbuilder_numThreads(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @returns {number}
+     */
+    receiver() {
+        const ret = wasm.wbg_rayon_poolbuilder_receiver(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+}
+if (Symbol.dispose) wbg_rayon_PoolBuilder.prototype[Symbol.dispose] = wbg_rayon_PoolBuilder.prototype.free;
+
+/**
+ * @param {number} receiver
+ */
+export function wbg_rayon_start_worker(receiver) {
+    wasm.wbg_rayon_start_worker(receiver);
+}
+
+function __wbg_get_imports(memory) {
     const import0 = {
         __proto__: null,
-        __wbg___wbindgen_debug_string_43c7ccb034739216: function(arg0, arg1) {
+        __wbg___wbindgen_copy_to_typed_array_5294f8e46aecc086: function(arg0, arg1, arg2) {
+            new Uint8Array(getObject(arg2).buffer, getObject(arg2).byteOffset, getObject(arg2).byteLength).set(getArrayU8FromWasm0(arg0, arg1));
+        },
+        __wbg___wbindgen_debug_string_ddde1867f49c2442: function(arg0, arg1) {
             const ret = debugString(getObject(arg1));
             const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_export, wasm.__wbindgen_export2);
             const len1 = WASM_VECTOR_LEN;
             getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
         },
-        __wbg___wbindgen_is_undefined_4a711ea9d2e1ef93: function(arg0) {
+        __wbg___wbindgen_is_function_d633e708baf0d146: function(arg0) {
+            const ret = typeof(getObject(arg0)) === 'function';
+            return ret;
+        },
+        __wbg___wbindgen_is_object_4b3de556756ee8a8: function(arg0) {
+            const val = getObject(arg0);
+            const ret = typeof(val) === 'object' && val !== null;
+            return ret;
+        },
+        __wbg___wbindgen_is_string_7debe47dc1e045c2: function(arg0) {
+            const ret = typeof(getObject(arg0)) === 'string';
+            return ret;
+        },
+        __wbg___wbindgen_is_undefined_c18285b9fc34cb7d: function(arg0) {
             const ret = getObject(arg0) === undefined;
             return ret;
         },
-        __wbg___wbindgen_throw_df03e93053e0f4bc: function(arg0, arg1) {
+        __wbg___wbindgen_memory_f1258f0b3cab52b2: function() {
+            const ret = wasm.memory;
+            return addHeapObject(ret);
+        },
+        __wbg___wbindgen_module_39ff3d28752148a9: function() {
+            const ret = wasmModule;
+            return addHeapObject(ret);
+        },
+        __wbg___wbindgen_number_get_5854912275df1894: function(arg0, arg1) {
+            const obj = getObject(arg1);
+            const ret = typeof(obj) === 'number' ? obj : undefined;
+            getDataViewMemory0().setFloat64(arg0 + 8 * 1, isLikeNone(ret) ? 0 : ret, true);
+            getDataViewMemory0().setInt32(arg0 + 4 * 0, !isLikeNone(ret), true);
+        },
+        __wbg___wbindgen_rethrow_0803fa3da1b498f1: function(arg0) {
+            throw takeObject(arg0);
+        },
+        __wbg___wbindgen_throw_39bc967c0e5a9b58: function(arg0, arg1) {
             throw new Error(getStringFromWasm0(arg0, arg1));
         },
-        __wbg_appendChild_1e23e55b041fadb7: function() { return handleError(function (arg0, arg1) {
+        __wbg__wbg_cb_unref_b6d832240a919168: function(arg0) {
+            getObject(arg0)._wbg_cb_unref();
+        },
+        __wbg_appendChild_f8784f6270d097cd: function() { return handleError(function (arg0, arg1) {
             const ret = getObject(arg0).appendChild(getObject(arg1));
             return addHeapObject(ret);
         }, arguments); },
-        __wbg_body_1f8fe64d6e751875: function(arg0) {
+        __wbg_async_d823d36f294f15c4: function(arg0) {
+            const ret = getObject(arg0).async;
+            return ret;
+        },
+        __wbg_body_4eb4906314b12ac0: function(arg0) {
             const ret = getObject(arg0).body;
             return isLikeNone(ret) ? 0 : addHeapObject(ret);
         },
-        __wbg_createElement_d42cc1dfefad50dc: function() { return handleError(function (arg0, arg1, arg2) {
+        __wbg_buffer_0501472a2adb62a1: function(arg0) {
+            const ret = getObject(arg0).buffer;
+            return addHeapObject(ret);
+        },
+        __wbg_call_08ad0d89caa7cb79: function() { return handleError(function (arg0, arg1, arg2) {
+            const ret = getObject(arg0).call(getObject(arg1), getObject(arg2));
+            return addHeapObject(ret);
+        }, arguments); },
+        __wbg_call_c974f0bf2231552e: function() { return handleError(function (arg0, arg1, arg2, arg3) {
+            const ret = getObject(arg0).call(getObject(arg1), getObject(arg2), getObject(arg3));
+            return addHeapObject(ret);
+        }, arguments); },
+        __wbg_color_new: function(arg0) {
+            const ret = Color.__wrap(arg0);
+            return addHeapObject(ret);
+        },
+        __wbg_createElement_c28be812ac2ffe84: function() { return handleError(function (arg0, arg1, arg2) {
             const ret = getObject(arg0).createElement(getStringFromWasm0(arg1, arg2));
             return addHeapObject(ret);
         }, arguments); },
-        __wbg_crypto_b501cd47f5fc84cc: function(arg0) {
+        __wbg_crypto_38df2bab126b63dc: function(arg0) {
             const ret = getObject(arg0).crypto;
             return addHeapObject(ret);
         },
-        __wbg_data_9d735c278043b856: function(arg0, arg1) {
+        __wbg_data_826b7d645a40043f: function(arg0) {
+            const ret = getObject(arg0).data;
+            return addHeapObject(ret);
+        },
+        __wbg_data_a8576aa36473ad45: function(arg0, arg1) {
             const ret = getObject(arg1).data;
             const ptr1 = passArray8ToWasm0(ret, wasm.__wbindgen_export);
             const len1 = WASM_VECTOR_LEN;
             getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
         },
-        __wbg_document_6359a1a8cf0c0ccc: function(arg0) {
+        __wbg_document_0b7613236d782ccc: function(arg0) {
             const ret = getObject(arg0).document;
             return isLikeNone(ret) ? 0 : addHeapObject(ret);
         },
-        __wbg_drawImage_929933494479c56f: function() { return handleError(function (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) {
-            getObject(arg0).drawImage(getObject(arg1), arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-        }, arguments); },
-        __wbg_drawImage_c3857fdfb276fc8e: function() { return handleError(function (arg0, arg1, arg2, arg3) {
+        __wbg_drawImage_3f68cb34a5e3700b: function() { return handleError(function (arg0, arg1, arg2, arg3) {
             getObject(arg0).drawImage(getObject(arg1), arg2, arg3);
+        }, arguments); },
+        __wbg_drawImage_6f33340e37778efb: function() { return handleError(function (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) {
+            getObject(arg0).drawImage(getObject(arg1), arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
         }, arguments); },
         __wbg_error_a6fa202b58aa1cd3: function(arg0, arg1) {
             let deferred0_0;
@@ -5207,34 +7400,55 @@ function __wbg_get_imports() {
                 wasm.__wbindgen_export4(deferred0_0, deferred0_1, 1);
             }
         },
-        __wbg_getContext_3be9714e8c10edf9: function() { return handleError(function (arg0, arg1, arg2) {
+        __wbg_error_ad28debb48b5c6bb: function(arg0) {
+            console.error(getObject(arg0));
+        },
+        __wbg_getContext_04fd91bf79400077: function() { return handleError(function (arg0, arg1, arg2) {
             const ret = getObject(arg0).getContext(getStringFromWasm0(arg1, arg2));
             return isLikeNone(ret) ? 0 : addHeapObject(ret);
         }, arguments); },
-        __wbg_getImageData_6fc8f0e926069345: function() { return handleError(function (arg0, arg1, arg2, arg3, arg4) {
+        __wbg_getImageData_ad1f4b73ac9d853c: function() { return handleError(function (arg0, arg1, arg2, arg3, arg4) {
             const ret = getObject(arg0).getImageData(arg1, arg2, arg3, arg4);
             return addHeapObject(ret);
         }, arguments); },
-        __wbg_getRandomValues_0ece34fb6273ba4a: function(arg0) {
-            const ret = getObject(arg0).getRandomValues;
+        __wbg_getRandomValues_c44a50d8cfdaebeb: function() { return handleError(function (arg0, arg1) {
+            getObject(arg0).getRandomValues(getObject(arg1));
+        }, arguments); },
+        __wbg_get_18349afdb36339a9: function() { return handleError(function (arg0, arg1) {
+            const ret = Reflect.get(getObject(arg0), getObject(arg1));
+            return addHeapObject(ret);
+        }, arguments); },
+        __wbg_get_f09c3a16f8848381: function(arg0, arg1) {
+            const ret = getObject(arg0)[arg1 >>> 0];
             return addHeapObject(ret);
         },
-        __wbg_getRandomValues_fc2c42282aa7250c: function(arg0, arg1) {
-            getObject(arg0).getRandomValues(getObject(arg1));
+        __wbg_get_index_36f92638a16561e8: function(arg0, arg1) {
+            const ret = getObject(arg0)[arg1 >>> 0];
+            return ret;
         },
-        __wbg_height_3991d9422ca14223: function(arg0) {
+        __wbg_height_21ecb9dcc0472f5d: function(arg0) {
             const ret = getObject(arg0).height;
             return ret;
         },
-        __wbg_height_91f361d36945d1c7: function(arg0) {
+        __wbg_height_a2a793f8a2363a46: function(arg0) {
             const ret = getObject(arg0).height;
             return ret;
         },
-        __wbg_height_bab03f2e157838d2: function(arg0) {
+        __wbg_height_a904b80afa6e2a37: function(arg0) {
             const ret = getObject(arg0).height;
             return ret;
         },
-        __wbg_instanceof_CanvasRenderingContext2d_69d767b4c5e9e82e: function(arg0) {
+        __wbg_instanceof_Array_461ec6d7afd45fda: function(arg0) {
+            let result;
+            try {
+                result = getObject(arg0) instanceof Array;
+            } catch (_) {
+                result = false;
+            }
+            const ret = result;
+            return ret;
+        },
+        __wbg_instanceof_CanvasRenderingContext2d_125f869ccf2f7649: function(arg0) {
             let result;
             try {
                 result = getObject(arg0) instanceof CanvasRenderingContext2D;
@@ -5244,7 +7458,17 @@ function __wbg_get_imports() {
             const ret = result;
             return ret;
         },
-        __wbg_instanceof_HtmlCanvasElement_6745c30e85c23ab2: function(arg0) {
+        __wbg_instanceof_Float32Array_00770a0487b98c06: function(arg0) {
+            let result;
+            try {
+                result = getObject(arg0) instanceof Float32Array;
+            } catch (_) {
+                result = false;
+            }
+            const ret = result;
+            return ret;
+        },
+        __wbg_instanceof_HtmlCanvasElement_d8fa699a8663ca1b: function(arg0) {
             let result;
             try {
                 result = getObject(arg0) instanceof HTMLCanvasElement;
@@ -5254,7 +7478,17 @@ function __wbg_get_imports() {
             const ret = result;
             return ret;
         },
-        __wbg_instanceof_Window_0cc62e4f32542cc4: function(arg0) {
+        __wbg_instanceof_Object_813a194d6e249bee: function(arg0) {
+            let result;
+            try {
+                result = getObject(arg0) instanceof Object;
+            } catch (_) {
+                result = false;
+            }
+            const ret = result;
+            return ret;
+        },
+        __wbg_instanceof_Window_4aba49e4d1a12365: function(arg0) {
             let result;
             try {
                 result = getObject(arg0) instanceof Window;
@@ -5264,58 +7498,166 @@ function __wbg_get_imports() {
             const ret = result;
             return ret;
         },
-        __wbg_length_5e07cf181b2745fb: function(arg0) {
+        __wbg_length_20b2161ab2bea256: function(arg0) {
             const ret = getObject(arg0).length;
             return ret;
         },
-        __wbg_msCrypto_56bad8adf1ceb3d9: function(arg0) {
+        __wbg_length_326999dcd07f2163: function(arg0) {
+            const ret = getObject(arg0).length;
+            return ret;
+        },
+        __wbg_length_5855c1f289dfffc1: function(arg0) {
+            const ret = getObject(arg0).length;
+            return ret;
+        },
+        __wbg_length_a31e05262e09b7f8: function(arg0) {
+            const ret = getObject(arg0).length;
+            return ret;
+        },
+        __wbg_msCrypto_bd5a034af96bcba6: function(arg0) {
             const ret = getObject(arg0).msCrypto;
+            return addHeapObject(ret);
+        },
+        __wbg_new_09959f7b4c92c246: function(arg0) {
+            const ret = new Uint8Array(getObject(arg0));
             return addHeapObject(ret);
         },
         __wbg_new_227d7c05414eb861: function() {
             const ret = new Error();
             return addHeapObject(ret);
         },
-        __wbg_new_a0479da6258a0d71: function(arg0) {
-            const ret = new Uint8Array(getObject(arg0));
+        __wbg_new_5249bab2d955c841: function(arg0) {
+            const ret = new Int32Array(getObject(arg0));
             return addHeapObject(ret);
         },
-        __wbg_new_with_length_9b57e4a9683723fa: function(arg0) {
+        __wbg_new_6eed8f87fc95618e: function() { return handleError(function (arg0, arg1) {
+            const ret = new Worker(getStringFromWasm0(arg0, arg1));
+            return addHeapObject(ret);
+        }, arguments); },
+        __wbg_new_79ce7968119cfd96: function(arg0, arg1) {
+            try {
+                var state0 = {a: arg0, b: arg1};
+                var cb0 = (arg0, arg1) => {
+                    const a = state0.a;
+                    state0.a = 0;
+                    try {
+                        return __wasm_bindgen_func_elem_2314(a, state0.b, arg0, arg1);
+                    } finally {
+                        state0.a = a;
+                    }
+                };
+                const ret = new Promise(cb0);
+                return addHeapObject(ret);
+            } finally {
+                state0.a = state0.b = 0;
+            }
+        },
+        __wbg_new_cbee8c0d5c479eac: function() {
+            const ret = new Array();
+            return addHeapObject(ret);
+        },
+        __wbg_new_ed69e637b553a997: function() {
+            const ret = new Object();
+            return addHeapObject(ret);
+        },
+        __wbg_new_from_slice_d7e202fdbee3c396: function(arg0, arg1) {
+            const ret = new Uint8Array(getArrayU8FromWasm0(arg0, arg1));
+            return addHeapObject(ret);
+        },
+        __wbg_new_typed_8258a0d8488ef2a2: function(arg0, arg1) {
+            try {
+                var state0 = {a: arg0, b: arg1};
+                var cb0 = (arg0, arg1) => {
+                    const a = state0.a;
+                    state0.a = 0;
+                    try {
+                        return __wasm_bindgen_func_elem_2314(a, state0.b, arg0, arg1);
+                    } finally {
+                        state0.a = a;
+                    }
+                };
+                const ret = new Promise(cb0);
+                return addHeapObject(ret);
+            } finally {
+                state0.a = state0.b = 0;
+            }
+        },
+        __wbg_new_with_length_c8449d782396d344: function(arg0) {
             const ret = new Uint8Array(arg0 >>> 0);
             return addHeapObject(ret);
         },
-        __wbg_new_with_u8_clamped_array_and_sh_d404c83358b4f8a7: function() { return handleError(function (arg0, arg1, arg2, arg3) {
+        __wbg_new_with_u8_clamped_array_and_sh_b673725621b5c7e7: function() { return handleError(function (arg0, arg1, arg2, arg3) {
             const ret = new ImageData(getClampedArrayU8FromWasm0(arg0, arg1), arg2 >>> 0, arg3 >>> 0);
             return addHeapObject(ret);
         }, arguments); },
-        __wbg_prototypesetcall_d1a7133bc8d83aa9: function(arg0, arg1, arg2) {
+        __wbg_node_84ea875411254db1: function(arg0) {
+            const ret = getObject(arg0).node;
+            return addHeapObject(ret);
+        },
+        __wbg_now_edd718b3004d8631: function() {
+            const ret = Date.now();
+            return ret;
+        },
+        __wbg_of_332bf1b25b068982: function(arg0, arg1, arg2) {
+            const ret = Array.of(getObject(arg0), getObject(arg1), getObject(arg2));
+            return addHeapObject(ret);
+        },
+        __wbg_postMessage_af6209ddad5840b9: function() { return handleError(function (arg0, arg1) {
+            getObject(arg0).postMessage(getObject(arg1));
+        }, arguments); },
+        __wbg_process_44c7a14e11e9f69e: function(arg0) {
+            const ret = getObject(arg0).process;
+            return addHeapObject(ret);
+        },
+        __wbg_prototypesetcall_e02cc4f04479d253: function(arg0, arg1, arg2) {
+            Uint8ClampedArray.prototype.set.call(getArrayU8FromWasm0(arg0, arg1), getObject(arg2));
+        },
+        __wbg_prototypesetcall_f034d444741426c3: function(arg0, arg1, arg2) {
             Uint8Array.prototype.set.call(getArrayU8FromWasm0(arg0, arg1), getObject(arg2));
         },
-        __wbg_putImageData_93c24c88613e11ba: function() { return handleError(function (arg0, arg1, arg2, arg3) {
+        __wbg_push_a6f9488ffd3fae3b: function(arg0, arg1) {
+            const ret = getObject(arg0).push(getObject(arg1));
+            return ret;
+        },
+        __wbg_putImageData_afec9ab1493ac23a: function() { return handleError(function (arg0, arg1, arg2, arg3) {
             getObject(arg0).putImageData(getObject(arg1), arg2, arg3);
         }, arguments); },
-        __wbg_randomFillSync_1afd9d46e5907320: function(arg0, arg1, arg2) {
-            getObject(arg0).randomFillSync(getArrayU8FromWasm0(arg1, arg2));
+        __wbg_queueMicrotask_2c8dfd1056f24fdc: function(arg0) {
+            const ret = getObject(arg0).queueMicrotask;
+            return addHeapObject(ret);
         },
-        __wbg_random_625435d73260b19d: function() {
+        __wbg_queueMicrotask_8985ad63815852e7: function(arg0) {
+            queueMicrotask(getObject(arg0));
+        },
+        __wbg_randomFillSync_6c25eac9869eb53c: function() { return handleError(function (arg0, arg1) {
+            getObject(arg0).randomFillSync(takeObject(arg1));
+        }, arguments); },
+        __wbg_random_2b7bed8995d680fb: function() {
             const ret = Math.random();
             return ret;
         },
-        __wbg_require_6e5b8fc0b04be67c: function(arg0, arg1, arg2) {
-            const ret = getObject(arg0).require(getStringFromWasm0(arg1, arg2));
-            return addHeapObject(ret);
-        },
-        __wbg_self_d2194f493ba20573: function() { return handleError(function () {
-            const ret = self.self;
+        __wbg_require_b4edbdcf3e2a1ef0: function() { return handleError(function () {
+            const ret = module.require;
             return addHeapObject(ret);
         }, arguments); },
-        __wbg_set_height_7dd5e784e99d750f: function(arg0, arg1) {
+        __wbg_resolve_5d61e0d10c14730a: function(arg0) {
+            const ret = Promise.resolve(getObject(arg0));
+            return addHeapObject(ret);
+        },
+        __wbg_set_bad5c505cc70b5f8: function() { return handleError(function (arg0, arg1, arg2) {
+            const ret = Reflect.set(getObject(arg0), getObject(arg1), getObject(arg2));
+            return ret;
+        }, arguments); },
+        __wbg_set_height_ed13c7b896d93a3b: function(arg0, arg1) {
             getObject(arg0).height = arg1 >>> 0;
         },
-        __wbg_set_textContent_8f86e47ecaa19cf8: function(arg0, arg1, arg2) {
+        __wbg_set_onmessage_a073f657459fcfe6: function(arg0, arg1) {
+            getObject(arg0).onmessage = getObject(arg1);
+        },
+        __wbg_set_textContent_ccd33eab05add227: function(arg0, arg1, arg2) {
             getObject(arg0).textContent = arg1 === 0 ? undefined : getStringFromWasm0(arg1, arg2);
         },
-        __wbg_set_width_de6a14a7fd9b3fdf: function(arg0, arg1) {
+        __wbg_set_width_7f65ced2ffeee343: function(arg0, arg1) {
             getObject(arg0).width = arg1 >>> 0;
         },
         __wbg_stack_3b0d974bbf31e44f: function(arg0, arg1) {
@@ -5325,46 +7667,125 @@ function __wbg_get_imports() {
             getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
         },
-        __wbg_static_accessor_GLOBAL_THIS_6614f2f4998e3c4c: function() {
+        __wbg_startWorkers_8b582d57e92bd2d4: function(arg0, arg1, arg2) {
+            const ret = startWorkers(takeObject(arg0), takeObject(arg1), wbg_rayon_PoolBuilder.__wrap(arg2));
+            return addHeapObject(ret);
+        },
+        __wbg_static_accessor_GLOBAL_THIS_14325d8cca34bb77: function() {
             const ret = typeof globalThis === 'undefined' ? null : globalThis;
             return isLikeNone(ret) ? 0 : addHeapObject(ret);
         },
-        __wbg_static_accessor_GLOBAL_d8e8a2fefe80bc1d: function() {
+        __wbg_static_accessor_GLOBAL_f3a1e69f9c5a7e8e: function() {
             const ret = typeof global === 'undefined' ? null : global;
             return isLikeNone(ret) ? 0 : addHeapObject(ret);
         },
-        __wbg_static_accessor_MODULE_ef3aa2eb251158a5: function() {
-            const ret = module;
-            return addHeapObject(ret);
-        },
-        __wbg_static_accessor_SELF_e29eaf7c465526b1: function() {
+        __wbg_static_accessor_SELF_50cdb5b517789aca: function() {
             const ret = typeof self === 'undefined' ? null : self;
             return isLikeNone(ret) ? 0 : addHeapObject(ret);
         },
-        __wbg_static_accessor_WINDOW_66e7ca3eef30585a: function() {
+        __wbg_static_accessor_WINDOW_d6c4126e4c244380: function() {
             const ret = typeof window === 'undefined' ? null : window;
             return isLikeNone(ret) ? 0 : addHeapObject(ret);
         },
-        __wbg_subarray_f36da54ffa7114f5: function(arg0, arg1, arg2) {
+        __wbg_subarray_7ad5f01d4a9c1c4d: function(arg0, arg1, arg2) {
             const ret = getObject(arg0).subarray(arg1 >>> 0, arg2 >>> 0);
             return addHeapObject(ret);
         },
-        __wbg_width_12d0b6a95084d00c: function(arg0) {
+        __wbg_then_6e88c9d5b003f517: function(arg0, arg1) {
+            const ret = getObject(arg0).then(getObject(arg1));
+            return addHeapObject(ret);
+        },
+        __wbg_then_d4163530723f56f4: function(arg0, arg1, arg2) {
+            const ret = getObject(arg0).then(getObject(arg1), getObject(arg2));
+            return addHeapObject(ret);
+        },
+        __wbg_then_f1c954fe00733701: function(arg0, arg1) {
+            const ret = getObject(arg0).then(getObject(arg1));
+            return addHeapObject(ret);
+        },
+        __wbg_value_ad1c1726993ce63e: function(arg0) {
+            const ret = getObject(arg0).value;
+            return addHeapObject(ret);
+        },
+        __wbg_versions_276b2795b1c6a219: function(arg0) {
+            const ret = getObject(arg0).versions;
+            return addHeapObject(ret);
+        },
+        __wbg_waitAsync_207a52eee200ef0a: function(arg0, arg1, arg2) {
+            const ret = Atomics.waitAsync(getObject(arg0), arg1 >>> 0, arg2);
+            return addHeapObject(ret);
+        },
+        __wbg_waitAsync_f6c74926be2d0dac: function() {
+            const ret = Atomics.waitAsync;
+            return addHeapObject(ret);
+        },
+        __wbg_width_60f44a816d7f9267: function(arg0) {
             const ret = getObject(arg0).width;
             return ret;
         },
-        __wbg_width_27c77c699b2b3551: function(arg0) {
+        __wbg_width_7e8257ca6cbf875f: function(arg0) {
             const ret = getObject(arg0).width;
             return ret;
         },
-        __wbg_width_655462ab514abe24: function(arg0) {
+        __wbg_width_b56e4eeade1cc8f6: function(arg0) {
             const ret = getObject(arg0).width;
             return ret;
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 240, function: Function { arguments: [Externref], shim_idx: 241, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_907, __wasm_bindgen_func_elem_908);
+            return addHeapObject(ret);
+        },
+        __wbindgen_cast_0000000000000002: function(arg0, arg1) {
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 393, function: Function { arguments: [Externref], shim_idx: 396, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1686, __wasm_bindgen_func_elem_1689);
+            return addHeapObject(ret);
+        },
+        __wbindgen_cast_0000000000000003: function(arg0, arg1) {
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 393, function: Function { arguments: [NamedExternref("MessageEvent")], shim_idx: 394, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1686, __wasm_bindgen_func_elem_1687);
+            return addHeapObject(ret);
+        },
+        __wbindgen_cast_0000000000000004: function(arg0) {
+            // Cast intrinsic for `F64 -> Externref`.
+            const ret = arg0;
+            return addHeapObject(ret);
+        },
+        __wbindgen_cast_0000000000000005: function(arg0, arg1) {
+            // Cast intrinsic for `Ref(Slice(U8)) -> NamedExternref("Uint8Array")`.
+            const ret = getArrayU8FromWasm0(arg0, arg1);
+            return addHeapObject(ret);
+        },
+        __wbindgen_cast_0000000000000006: function(arg0, arg1) {
+            // Cast intrinsic for `Ref(Slice(U8)) -> NamedExternref("Uint8ClampedArray")`.
+            const ret = getArrayU8FromWasm0(arg0, arg1);
+            return addHeapObject(ret);
+        },
+        __wbindgen_cast_0000000000000007: function(arg0, arg1) {
             // Cast intrinsic for `Ref(String) -> Externref`.
             const ret = getStringFromWasm0(arg0, arg1);
             return addHeapObject(ret);
+        },
+        __wbindgen_cast_0000000000000008: function(arg0, arg1) {
+            var v0 = getClampedArrayU8FromWasm0(arg0, arg1).slice();
+            wasm.__wbindgen_export4(arg0, arg1 * 1, 1);
+            // Cast intrinsic for `Vector(ClampedU8) -> Externref`.
+            const ret = v0;
+            return addHeapObject(ret);
+        },
+        __wbindgen_link_922dd8fcb05d94cd: function(arg0) {
+            const val = `onmessage = function (ev) {
+                let [ia, index, value] = ev.data;
+                ia = new Int32Array(ia.buffer);
+                let result = Atomics.wait(ia, index, value);
+                postMessage(result);
+            };
+            `;
+            const ret = typeof URL.createObjectURL === 'undefined' ? "data:application/javascript," + encodeURIComponent(val) : URL.createObjectURL(new Blob([val], { type: "text/javascript" }));
+            const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+            const len1 = WASM_VECTOR_LEN;
+            getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
+            getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
         },
         __wbindgen_object_clone_ref: function(arg0) {
             const ret = getObject(arg0);
@@ -5373,6 +7794,7 @@ function __wbg_get_imports() {
         __wbindgen_object_drop_ref: function(arg0) {
             takeObject(arg0);
         },
+        memory: memory || new WebAssembly.Memory({initial:21,maximum:16384,shared:true}),
     };
     return {
         __proto__: null,
@@ -5380,6 +7802,41 @@ function __wbg_get_imports() {
     };
 }
 
+function __wasm_bindgen_func_elem_908(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_908(arg0, arg1, addHeapObject(arg2));
+}
+
+function __wasm_bindgen_func_elem_1687(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1687(arg0, arg1, addHeapObject(arg2));
+}
+
+function __wasm_bindgen_func_elem_1689(arg0, arg1, arg2) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.__wasm_bindgen_func_elem_1689(retptr, arg0, arg1, addHeapObject(arg2));
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        if (r1) {
+            throw takeObject(r0);
+        }
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+function __wasm_bindgen_func_elem_2314(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_2314(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+}
+
+const BrushConfigFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_brushconfig_free(ptr >>> 0, 1));
+const BrushStrokeFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_brushstroke_free(ptr >>> 0, 1));
+const ColorFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_color_free(ptr >>> 0, 1));
 const ImageProcessorFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_imageprocessor_free(ptr >>> 0, 1));
@@ -5392,6 +7849,12 @@ const RgbFinalization = (typeof FinalizationRegistry === 'undefined')
 const RgbaFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_rgba_free(ptr >>> 0, 1));
+const StrokePointFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_strokepoint_free(ptr >>> 0, 1));
+const wbg_rayon_PoolBuilderFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_wbg_rayon_poolbuilder_free(ptr >>> 0, 1));
 
 function addHeapObject(obj) {
     if (heap_next === heap.length) heap.push(heap.length + 1);
@@ -5413,6 +7876,10 @@ function addBorrowedObject(obj) {
     heap[--stack_pointer] = obj;
     return stack_pointer;
 }
+
+const CLOSURE_DTORS = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(state => state.dtor(state.a, state.b));
 
 function debugString(val) {
     // primitive types
@@ -5485,6 +7952,16 @@ function dropObject(idx) {
     heap_next = idx;
 }
 
+function getArrayJsValueFromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    const mem = getDataViewMemory0();
+    const result = [];
+    for (let i = ptr; i < ptr + 4 * len; i += 4) {
+        result.push(takeObject(mem.getUint32(i, true)));
+    }
+    return result;
+}
+
 function getArrayU8FromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
@@ -5497,10 +7974,18 @@ function getClampedArrayU8FromWasm0(ptr, len) {
 
 let cachedDataViewMemory0 = null;
 function getDataViewMemory0() {
-    if (cachedDataViewMemory0 === null || cachedDataViewMemory0.buffer.detached === true || (cachedDataViewMemory0.buffer.detached === undefined && cachedDataViewMemory0.buffer !== wasm.memory.buffer)) {
+    if (cachedDataViewMemory0 === null || cachedDataViewMemory0.buffer !== wasm.memory.buffer) {
         cachedDataViewMemory0 = new DataView(wasm.memory.buffer);
     }
     return cachedDataViewMemory0;
+}
+
+let cachedFloat32ArrayMemory0 = null;
+function getFloat32ArrayMemory0() {
+    if (cachedFloat32ArrayMemory0 === null || cachedFloat32ArrayMemory0.buffer !== wasm.memory.buffer) {
+        cachedFloat32ArrayMemory0 = new Float32Array(wasm.memory.buffer);
+    }
+    return cachedFloat32ArrayMemory0;
 }
 
 function getStringFromWasm0(ptr, len) {
@@ -5510,7 +7995,7 @@ function getStringFromWasm0(ptr, len) {
 
 let cachedUint8ArrayMemory0 = null;
 function getUint8ArrayMemory0() {
-    if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
+    if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.buffer !== wasm.memory.buffer) {
         cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
     }
     return cachedUint8ArrayMemory0;
@@ -5518,7 +8003,7 @@ function getUint8ArrayMemory0() {
 
 let cachedUint8ClampedArrayMemory0 = null;
 function getUint8ClampedArrayMemory0() {
-    if (cachedUint8ClampedArrayMemory0 === null || cachedUint8ClampedArrayMemory0.byteLength === 0) {
+    if (cachedUint8ClampedArrayMemory0 === null || cachedUint8ClampedArrayMemory0.buffer !== wasm.memory.buffer) {
         cachedUint8ClampedArrayMemory0 = new Uint8ClampedArray(wasm.memory.buffer);
     }
     return cachedUint8ClampedArrayMemory0;
@@ -5543,9 +8028,44 @@ function isLikeNone(x) {
     return x === undefined || x === null;
 }
 
+function makeMutClosure(arg0, arg1, dtor, f) {
+    const state = { a: arg0, b: arg1, cnt: 1, dtor };
+    const real = (...args) => {
+
+        // First up with a closure we increment the internal reference
+        // count. This ensures that the Rust closure environment won't
+        // be deallocated while we're invoking it.
+        state.cnt++;
+        const a = state.a;
+        state.a = 0;
+        try {
+            return f(a, state.b, ...args);
+        } finally {
+            state.a = a;
+            real._wbg_cb_unref();
+        }
+    };
+    real._wbg_cb_unref = () => {
+        if (--state.cnt === 0) {
+            state.dtor(state.a, state.b);
+            state.a = 0;
+            CLOSURE_DTORS.unregister(state);
+        }
+    };
+    CLOSURE_DTORS.register(real, state, state);
+    return real;
+}
+
 function passArray8ToWasm0(arg, malloc) {
     const ptr = malloc(arg.length * 1, 1) >>> 0;
     getUint8ArrayMemory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
+function passArrayF32ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 4, 4) >>> 0;
+    getFloat32ArrayMemory0().set(arg, ptr / 4);
     WASM_VECTOR_LEN = arg.length;
     return ptr;
 }
@@ -5595,8 +8115,9 @@ function takeObject(idx) {
     return ret;
 }
 
-let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
-cachedTextDecoder.decode();
+let cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : undefined);
+if (cachedTextDecoder) cachedTextDecoder.decode();
+
 const MAX_SAFARI_DECODE_BYTES = 2146435072;
 let numBytesDecoded = 0;
 function decodeText(ptr, len) {
@@ -5606,12 +8127,12 @@ function decodeText(ptr, len) {
         cachedTextDecoder.decode();
         numBytesDecoded = len;
     }
-    return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
+    return cachedTextDecoder.decode(getUint8ArrayMemory0().slice(ptr, ptr + len));
 }
 
-const cachedTextEncoder = new TextEncoder();
+const cachedTextEncoder = (typeof TextEncoder !== 'undefined' ? new TextEncoder() : undefined);
 
-if (!('encodeInto' in cachedTextEncoder)) {
+if (cachedTextEncoder) {
     cachedTextEncoder.encodeInto = function (arg, view) {
         const buf = cachedTextEncoder.encode(arg);
         view.set(buf);
@@ -5625,13 +8146,18 @@ if (!('encodeInto' in cachedTextEncoder)) {
 let WASM_VECTOR_LEN = 0;
 
 let wasmModule, wasm;
-function __wbg_finalize_init(instance, module) {
+function __wbg_finalize_init(instance, module, thread_stack_size) {
     wasm = instance.exports;
     wasmModule = module;
     cachedDataViewMemory0 = null;
+    cachedFloat32ArrayMemory0 = null;
     cachedUint8ArrayMemory0 = null;
     cachedUint8ClampedArrayMemory0 = null;
-    wasm.__wbindgen_start();
+    if (typeof thread_stack_size !== 'undefined' && (typeof thread_stack_size !== 'number' || thread_stack_size === 0 || thread_stack_size % 65536 !== 0)) {
+        throw new Error('invalid stack size');
+    }
+
+    wasm.__wbindgen_start(thread_stack_size);
     return wasm;
 }
 
@@ -5670,33 +8196,33 @@ async function __wbg_load(module, imports) {
     }
 }
 
-function initSync(module) {
+function initSync(module, memory) {
     if (wasm !== undefined) return wasm;
 
-
+    let thread_stack_size
     if (module !== undefined) {
         if (Object.getPrototypeOf(module) === Object.prototype) {
-            ({module} = module)
+            ({module, memory, thread_stack_size} = module)
         } else {
             console.warn('using deprecated parameters for `initSync()`; pass a single object instead')
         }
     }
 
-    const imports = __wbg_get_imports();
+    const imports = __wbg_get_imports(memory);
     if (!(module instanceof WebAssembly.Module)) {
         module = new WebAssembly.Module(module);
     }
     const instance = new WebAssembly.Instance(module, imports);
-    return __wbg_finalize_init(instance, module);
+    return __wbg_finalize_init(instance, module, thread_stack_size);
 }
 
-async function __wbg_init(module_or_path) {
+async function __wbg_init(module_or_path, memory) {
     if (wasm !== undefined) return wasm;
 
-
+    let thread_stack_size
     if (module_or_path !== undefined) {
         if (Object.getPrototypeOf(module_or_path) === Object.prototype) {
-            ({module_or_path} = module_or_path)
+            ({module_or_path, memory, thread_stack_size} = module_or_path)
         } else {
             console.warn('using deprecated parameters for the initialization function; pass a single object instead')
         }
@@ -5705,7 +8231,7 @@ async function __wbg_init(module_or_path) {
     if (module_or_path === undefined) {
         module_or_path = new URL('photon_wasm_bg.wasm', import.meta.url);
     }
-    const imports = __wbg_get_imports();
+    const imports = __wbg_get_imports(memory);
 
     if (typeof module_or_path === 'string' || (typeof Request === 'function' && module_or_path instanceof Request) || (typeof URL === 'function' && module_or_path instanceof URL)) {
         module_or_path = fetch(module_or_path);
@@ -5713,7 +8239,7 @@ async function __wbg_init(module_or_path) {
 
     const { instance, module } = await __wbg_load(await module_or_path, imports);
 
-    return __wbg_finalize_init(instance, module);
+    return __wbg_finalize_init(instance, module, thread_stack_size);
 }
 
 export { initSync, __wbg_init as default };

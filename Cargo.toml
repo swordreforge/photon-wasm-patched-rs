@@ -8,12 +8,22 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wasm-bindgen = "0.2"
-photon-rs = { path = "photon-master/crate" }
+js-sys = "0.3"
+web-sys = "0.3"
+photon-rs = { path = "photon-master/crate", features = ["enable_wasm", "rayon", "wasm-bindgen-rayon"] }
 base64 = "0.21"
 console_error_panic_hook = "0.1"
+image = { version = "0.24.8", default-features = false, features = ["png", "jpeg"] }
+tiny-skia = "0.11"
+wasm-bindgen-rayon = { version = "1.3", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+
+[features]
+default = ["enable_wasm"]
+enable_wasm = ["wasm-bindgen-rayon", "wasm-bindgen-futures"]
 
 [profile.release]
-opt-level = "z"          # 优先优化代码大小
+opt-level = 3         # Rust 体积优化级别（最小化体积）
 lto = true              # 开启链接时优化
 codegen-units = 1       # 单个代码生成单元以获得更好的优化效果
 panic = "abort"         # 在 panic 时直接终止，减少 unwind 代码
@@ -22,4 +32,4 @@ debug = false           # 不包含调试信息
 incremental = false     # 关闭增量编译
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-Oz", "--enable-bulk-memory", "--enable-nontrapping-float-to-int"]
+wasm-opt = ["-O4", "--enable-bulk-memory", "--enable-nontrapping-float-to-int", "--enable-simd", "--enable-threads"]

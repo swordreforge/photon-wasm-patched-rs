@@ -1,0 +1,7 @@
+[build]
+# Rust编译器选项，启用不安全的数学优化（接近Ofast）
+rustflags = ["-C", "llvm-args=--enable-no-nans-fp-math"]
+
+# WASM 专用配置
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "llvm-args=--enable-no-nans-fp-math", "-C", "target-feature=+simd128"]

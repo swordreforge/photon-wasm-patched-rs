@@ -1,15 +1,13 @@
 [package]
-authors = ["Silvia O'Dwyer <silviaodwyerdev@gmail.com>"]
+authors = ["Swordreforge <zhujian_20060818@qq.com>"]
 categories = ["wasm", "multimedia"]
-description = "High-performance image processing library for native use and the web"
+description = "Based on photon-rs,but brings a lot more features"
 license = "Apache-2.0"
 name = "photon-rs"
 readme = "./README.md"
-repository = "https://github.com/silvia-odwyer/photon"
 version = "0.3.3"
 edition = "2021"
 exclude = ["pkg/*", "examples/input_images/*"]
-homepage = "https://silvia-odwyer.github.io/photon/"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -31,10 +29,12 @@ image = { version = "0.24.8", default-features = false, features = [
   "farbfeld",
 ] }
 palette = "0.6.1"
-rand = { version = "0.7.2", features = ["wasm-bindgen"] }
+rand = { version = "0.8.5" }
+getrandom = { version = "0.2", features = ["js"] }
 imageproc = { version = "0.23.0", default-features = false }
-rusttype = "0.9.2"
-base64 = "0.13.0"
+# We replaced rusttype to fontdue for it is faster and can support no_std
+fontdue = "0.9.2"
+base64 = "0.22.1"
 time = "0.3.21"
 wasm-bindgen = { version = "0.2.92", optional = true }
 serde = { version = "1.0", features = ["derive"] }
@@ -43,6 +43,9 @@ js-sys = { version = "0.3.62", optional = true }
 node-sys = { version = "0.4.2", optional = true }
 perlin2d = "0.2.6"
 instant = "0.1.12"
+rayon = { version = "1.8", optional = true }
+wasm-bindgen-rayon = { version = "1.3", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
@@ -50,6 +53,7 @@ instant = "0.1.12"
 # code size when deploying.
 console_error_panic_hook = { version = "0.1.7", optional = true }
 
+#We desided bump-scope to speeed up the efficientcy
 # `wee_alloc` is a tiny allocator for wasm that is only ~1K in code size
 # compared to the default allocator's ~10K. It is slower than the default
 # allocator, however.
@@ -58,13 +62,16 @@ wee_alloc = { version = "0.4.2", optional = true }
 [dev-dependencies]
 time = "0.3.21"
 criterion = "0.3"
+wasm-bindgen-test = "0.3"
+rayon = "1.8"
 
 [[bench]]
 name = "photon_benchmark"
 harness = false
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = false
+# 启用 wasm-opt 以获得最佳 WASM 性能
+wasm-opt = ["-O4", "--enable-mutable-globals", "--enable-sign-ext"]
 
 [dependencies.web-sys]
 version = "0.3"
@@ -93,4 +100,7 @@ enable_wasm = [
   "js-sys",
   "node-sys",
   "console_error_panic_hook",
+  "wasm-bindgen-rayon",
+  "wasm-bindgen-futures",
 ]
+rayon = ["dep:rayon"]

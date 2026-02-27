@@ -25,14 +25,8 @@ use wasm_bindgen::prelude::*;
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn neue(photon_image: &mut PhotonImage) {
-    let end = photon_image.get_raw_pixels().len();
-
-    for i in (0..end).step_by(4) {
-        let b_val = photon_image.raw_pixels[i + 2];
-        if 255_i32 - b_val as i32 > 0 {
-            photon_image.raw_pixels[i + 2] = 255 - b_val;
-        }
-    }
+    // Use SIMD optimized version
+    crate::simd::filter_neue_simd(photon_image);
 }
 
 /// Solarization on the Red and Green channels.
@@ -50,15 +44,8 @@ pub fn neue(photon_image: &mut PhotonImage) {
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn lix(photon_image: &mut PhotonImage) {
-    let end = photon_image.get_raw_pixels().len();
-
-    for i in (0..end).step_by(4) {
-        let r_val = photon_image.raw_pixels[i];
-        let g_val = photon_image.raw_pixels[i + 1];
-
-        photon_image.raw_pixels[i] = 255 - r_val;
-        photon_image.raw_pixels[i + 1] = 255 - g_val;
-    }
+    // Use SIMD optimized version
+    crate::simd::filter_lix_simd(photon_image);
 }
 
 /// Solarization on the Red and Blue channels.
@@ -76,15 +63,8 @@ pub fn lix(photon_image: &mut PhotonImage) {
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn ryo(photon_image: &mut PhotonImage) {
-    let end = photon_image.get_raw_pixels().len();
-
-    for i in (0..end).step_by(4) {
-        let r_val = photon_image.raw_pixels[i];
-        let b_val = photon_image.raw_pixels[i + 2];
-
-        photon_image.raw_pixels[i] = 255 - r_val;
-        photon_image.raw_pixels[i + 2] = 255 - b_val;
-    }
+    // Use SIMD optimized version
+    crate::simd::filter_ryo_simd(photon_image);
 }
 
 /// Apply a filter to an image. Over 20 filters are available.
