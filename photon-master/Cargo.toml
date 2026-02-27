@@ -1,5 +1,18 @@
 [workspace]
+resolver = "2"
 
 members = [
     "crate"
 ]
+
+[profile.release]
+# 链接时优化 (LTO) - 减少代码大小并提高性能
+lto = true
+# 优化级别 3 - 最高级别的优化
+opt-level = 3
+# 代码生成单元 - 对于 WASM 使用 1 以获得最佳优化
+codegen-units = 1
+# 启用恐慌展开，减小二进制大小
+panic = "abort"
+# 移除调试符号
+strip = true

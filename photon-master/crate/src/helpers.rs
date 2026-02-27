@@ -3,6 +3,7 @@
 use crate::{PhotonImage, Rgb};
 use image::DynamicImage::ImageRgba8;
 use image::{DynamicImage, ImageBuffer};
+use std::borrow::Cow;
 
 #[cfg(feature = "enable_wasm")]
 extern crate wasm_bindgen;
@@ -38,15 +39,51 @@ pub fn get_pixels(img: DynamicImage) -> Vec<u8> {
 }
 
 /// Convert a PhotonImage to a DynamicImage type (struct used by the `image` crate)
+/// 
+/// This version clones the pixel data, which is necessary when the image needs to be modified.
+/// For read-only operations, consider using `dyn_image_from_raw_borrowed` to avoid cloning.
 pub fn dyn_image_from_raw(photon_image: &PhotonImage) -> DynamicImage {
     // convert a vec of raw pixels (as u8s) to a DynamicImage type
-    let _len_vec = photon_image.raw_pixels.len() as u128;
     let raw_pixels = &photon_image.raw_pixels;
     let img_buffer = ImageBuffer::from_vec(
         photon_image.width,
         photon_image.height,
-        raw_pixels.to_vec(),
+        raw_pixels.clone(),
     )
     .unwrap();
     ImageRgba8(img_buffer)
+}
+
+/// Convert a PhotonImage to a DynamicImage type without cloning pixel data.
+/// 
+/// This version uses Cow to avoid unnecessary cloning when the image is only used for reading.
+/// The returned DynamicImage will take ownership of the pixel data.
+/// 
+/// # Arguments
+/// * `photon_image` - A PhotonImage that will be consumed.
+/// 
+/// # Returns
+/// A DynamicImage with the pixel data moved from the PhotonImage.
+pub fn dyn_image_from_raw_owned(photon_image: PhotonImage) -> DynamicImage {
+    let img_buffer = ImageBuffer::from_vec(
+        photon_image.width,
+        photon_image.height,
+        photon_image.raw_pixels,
+    )
+    .unwrap();
+    ImageRgba8(img_buffer)
+}
+
+/// Get a borrowed view of the pixel data from a PhotonImage.
+/// 
+/// This function returns a Cow that borrows the pixel data when possible,
+/// avoiding unnecessary allocations for read-only operations.
+/// 
+/// # Arguments
+/// * `photon_image` - A reference to a PhotonImage.
+/// 
+/// # Returns
+/// A Cow containing either borrowed or owned pixel data.
+pub fn get_pixels_cow(photon_image: &PhotonImage) -> Cow<'_, [u8]> {
+    Cow::Borrowed(&photon_image.raw_pixels)
 }

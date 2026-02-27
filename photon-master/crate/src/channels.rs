@@ -5,7 +5,6 @@ use image::Pixel as OtherPixel;
 use image::{GenericImage, GenericImageView};
 
 use crate::helpers;
-use crate::iter::ImageIterator;
 use crate::{PhotonImage, Rgb};
 use palette::{FromColor, IntoColor};
 use palette::{Hue, Lab, Lch, Saturate, Shade, Srgb, Srgba};
@@ -50,15 +49,12 @@ pub fn alter_channel(img: &mut PhotonImage, channel: usize, amt: i16) {
     if channel > 2 {
         panic!("Invalid channel index passed. Channel must be 0, 1, or 2 (Red=0, Green=1, Blue=2)");
     }
-    if amt > 255 {
+    if amt.abs() > 255 {
         panic!("Amount to increment/decrement should be between -255 and 255");
     }
-    let end = img.raw_pixels.len();
 
-    for i in (channel..end).step_by(4) {
-        let inc_val: i16 = img.raw_pixels[i] as i16 + amt;
-        img.raw_pixels[i] = inc_val.clamp(0, 255) as u8;
-    }
+    // Use SIMD optimized version
+    crate::simd::alter_channel_simd(img, channel, amt);
 }
 
 /// Increment or decrement every pixel's Red channel by a constant.
@@ -195,26 +191,18 @@ pub fn alter_two_channels(
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn alter_channels(img: &mut PhotonImage, r_amt: i16, g_amt: i16, b_amt: i16) {
-    if r_amt > 255 {
+    if r_amt.abs() > 255 {
         panic!("Invalid r_amt passed. Amount to inc/dec channel by should be between -255 and 255");
     }
-    if g_amt > 255 {
+    if g_amt.abs() > 255 {
         panic!("Invalid g_amt passed. Amount to inc/dec channel by should be between -255 and 255");
     }
-    if b_amt > 255 {
+    if b_amt.abs() > 255 {
         panic!("Invalid b_amt passed. Amount to inc/dec channel by should be between -255 and 255");
     }
-    let end = img.raw_pixels.len();
 
-    for i in (0..end).step_by(4) {
-        let r_val: i16 = img.raw_pixels[i] as i16 + r_amt;
-        let g_val: i16 = img.raw_pixels[i + 1] as i16 + g_amt;
-        let b_val: i16 = img.raw_pixels[i + 2] as i16 + b_amt;
-
-        img.raw_pixels[i] = r_val.clamp(0, 255) as u8;
-        img.raw_pixels[i + 1] = g_val.clamp(0, 255) as u8;
-        img.raw_pixels[i + 2] = b_val.clamp(0, 255) as u8;
-    }
+    // Use SIMD optimized version
+    crate::simd::alter_channels_simd(img, r_amt, g_amt, b_amt);
 }
 
 /// Set a certain channel to zero, thus removing the channel's influence in the pixels' final rendered colour.
@@ -365,17 +353,8 @@ pub fn swap_channels(img: &mut PhotonImage, mut channel1: usize, mut channel2: u
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn invert(photon_image: &mut PhotonImage) {
-    let end = photon_image.get_raw_pixels().len();
-
-    for i in (0..end).step_by(4) {
-        let r_val = photon_image.raw_pixels[i];
-        let g_val = photon_image.raw_pixels[i + 1];
-        let b_val = photon_image.raw_pixels[i + 2];
-
-        photon_image.raw_pixels[i] = 255 - r_val;
-        photon_image.raw_pixels[i + 1] = 255 - g_val;
-        photon_image.raw_pixels[i + 2] = 255 - b_val;
-    }
+    // Use SIMD optimized version
+    crate::simd::invert_simd(photon_image);
 }
 
 /// Selective hue rotation.
@@ -410,50 +389,52 @@ pub fn selective_hue_rotate(
     let (width, height) = img.dimensions();
 
     let mut img = img.to_rgba8();
-    for (x, y) in ImageIterator::new(width, height) {
-        let px = img.get_pixel(x, y);
+    for x in 0..width {
+        for y in 0..height {
+            let px = img.get_pixel(x, y);
 
-        // Reference colour to compare the current pixel's colour to
-        let lab: Lab = Srgb::new(
-            ref_color.r as f32 / 255.0,
-            ref_color.g as f32 / 255.0,
-            ref_color.b as f32 / 255.0,
-        )
-        .into_color();
-        let channels = px.channels();
-        // Convert the current pixel's colour to the l*a*b colour space
-        let r_val: f32 = channels[0] as f32 / 255.0;
-        let g_val: f32 = channels[1] as f32 / 255.0;
-        let b_val: f32 = channels[2] as f32 / 255.0;
+            // Reference colour to compare the current pixel's colour to
+            let lab: Lab = Srgb::new(
+                ref_color.r as f32 / 255.0,
+                ref_color.g as f32 / 255.0,
+                ref_color.b as f32 / 255.0,
+            )
+            .into_color();
+            let channels = px.channels();
+            // Convert the current pixel's colour to the l*a*b colour space
+            let r_val: f32 = channels[0] as f32 / 255.0;
+            let g_val: f32 = channels[1] as f32 / 255.0;
+            let b_val: f32 = channels[2] as f32 / 255.0;
 
-        let px_lab: Lab = Srgb::new(r_val, g_val, b_val).into_color();
+            let px_lab: Lab = Srgb::new(r_val, g_val, b_val).into_color();
 
-        let sim = color_sim(lab, px_lab);
-        if sim > 0 && sim < 40 {
-            let px_data = img.get_pixel(x, y).channels();
-            let color = Srgba::new(
-                px_data[0] as f32,
-                px_data[1] as f32,
-                px_data[2] as f32,
-                255.0,
-            );
-            let hue_rotated_color = Lch::from_color(color).shift_hue(degrees);
+            let sim = color_sim(lab, px_lab);
+            if sim > 0 && sim < 40 {
+                let px_data = img.get_pixel(x, y).channels();
+                let color = Srgba::new(
+                    px_data[0] as f32,
+                    px_data[1] as f32,
+                    px_data[2] as f32,
+                    255.0,
+                );
+                let hue_rotated_color = Lch::from_color(color).shift_hue(degrees);
 
-            let final_color: Srgba =
-                Srgba::from_linear(hue_rotated_color.into_color()).into_format();
+                let final_color: Srgba =
+                    Srgba::from_linear(hue_rotated_color.into_color()).into_format();
 
-            let components = final_color.into_components();
+                let components = final_color.into_components();
 
-            img.put_pixel(
-                x,
-                y,
-                image::Rgba([
-                    (components.0 * 255.0) as u8,
-                    (components.1 * 255.0) as u8,
-                    (components.2 * 255.0) as u8,
-                    255,
-                ]),
-            );
+                img.put_pixel(
+                    x,
+                    y,
+                    image::Rgba([
+                        (components.0 * 255.0) as u8,
+                        (components.1 * 255.0) as u8,
+                        (components.2 * 255.0) as u8,
+                        255,
+                    ]),
+                );
+            }
         }
     }
 
@@ -650,56 +631,58 @@ fn selective(
     let (width, height) = img.dimensions();
     let mut img = img.to_rgba8();
 
-    for (x, y) in ImageIterator::new(width, height) {
-        let px = img.get_pixel(x, y);
+    for x in 0..width {
+        for y in 0..height {
+            let px = img.get_pixel(x, y);
 
-        // Reference colour to compare the current pixel's colour to
-        let lab: Lab = Srgb::new(
-            ref_color.r as f32 / 255.0,
-            ref_color.g as f32 / 255.0,
-            ref_color.b as f32 / 255.0,
-        )
-        .into_color();
-        let channels = px.channels();
-        // Convert the current pixel's colour to the l*a*b colour space
-        let r_val: f32 = channels[0] as f32 / 255.0;
-        let g_val: f32 = channels[1] as f32 / 255.0;
-        let b_val: f32 = channels[2] as f32 / 255.0;
+            // Reference colour to compare the current pixel's colour to
+            let lab: Lab = Srgb::new(
+                ref_color.r as f32 / 255.0,
+                ref_color.g as f32 / 255.0,
+                ref_color.b as f32 / 255.0,
+            )
+            .into_color();
+            let channels = px.channels();
+            // Convert the current pixel's colour to the l*a*b colour space
+            let r_val: f32 = channels[0] as f32 / 255.0;
+            let g_val: f32 = channels[1] as f32 / 255.0;
+            let b_val: f32 = channels[2] as f32 / 255.0;
 
-        let px_lab: Lab = Srgb::new(r_val, g_val, b_val).into_color();
+            let px_lab: Lab = Srgb::new(r_val, g_val, b_val).into_color();
 
-        let sim = color_sim(lab, px_lab);
-        if sim > 0 && sim < 40 {
-            let px_data = img.get_pixel(x, y).channels();
-            let lch_colour: Lch = Srgb::new(px_data[0], px_data[1], px_data[2])
-                .into_format()
-                .into_linear()
-                .into_color();
+            let sim = color_sim(lab, px_lab);
+            if sim > 0 && sim < 40 {
+                let px_data = img.get_pixel(x, y).channels();
+                let lch_colour: Lch = Srgb::new(px_data[0], px_data[1], px_data[2])
+                    .into_format()
+                    .into_linear()
+                    .into_color();
 
-            let new_color = match mode {
-                // Match a single value
-                "desaturate" => lch_colour.desaturate(amt),
-                "saturate" => lch_colour.saturate(amt),
-                "lighten" => lch_colour.lighten(amt),
-                "darken" => lch_colour.darken(amt),
-                _ => lch_colour.saturate(amt),
-            };
+                let new_color = match mode {
+                    // Match a single value
+                    "desaturate" => lch_colour.desaturate(amt),
+                    "saturate" => lch_colour.saturate(amt),
+                    "lighten" => lch_colour.lighten(amt),
+                    "darken" => lch_colour.darken(amt),
+                    _ => lch_colour.saturate(amt),
+                };
 
-            // let final_color: Srgba = Srgba::from_linear(new_color.into_color());
-            let final_color = Srgba::from_color(new_color);
+                // let final_color: Srgba = Srgba::from_linear(new_color.into_color());
+                let final_color = Srgba::from_color(new_color);
 
-            let components = final_color.into_components();
+                let components = final_color.into_components();
 
-            img.put_pixel(
-                x,
-                y,
-                image::Rgba([
-                    (components.0 * 255.0) as u8,
-                    (components.1 * 255.0) as u8,
-                    (components.2 * 255.0) as u8,
-                    255,
-                ]),
-            );
+                img.put_pixel(
+                    x,
+                    y,
+                    image::Rgba([
+                        (components.0 * 255.0) as u8,
+                        (components.1 * 255.0) as u8,
+                        (components.2 * 255.0) as u8,
+                        255,
+                    ]),
+                );
+            }
         }
     }
 
@@ -731,33 +714,36 @@ fn selective(
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn selective_greyscale(mut photon_image: PhotonImage, ref_color: Rgb) {
     let mut img = helpers::dyn_image_from_raw(&photon_image);
+    let (width, height) = img.dimensions();
 
-    for (x, y) in ImageIterator::new(img.width(), img.height()) {
-        let mut px = img.get_pixel(x, y);
+    for x in 0..width {
+        for y in 0..height {
+            let mut px = img.get_pixel(x, y);
 
-        // Reference colour to compare the current pixel's colour to
-        let lab: Lab = Srgb::new(
-            ref_color.r as f32 / 255.0,
-            ref_color.g as f32 / 255.0,
-            ref_color.b as f32 / 255.0,
-        )
-        .into_color();
-        let channels = px.channels();
-        // Convert the current pixel's colour to the l*a*b colour space
-        let r_val: f32 = channels[0] as f32 / 255.0;
-        let g_val: f32 = channels[1] as f32 / 255.0;
-        let b_val: f32 = channels[2] as f32 / 255.0;
+            // Reference colour to compare the current pixel's colour to
+            let lab: Lab = Srgb::new(
+                ref_color.r as f32 / 255.0,
+                ref_color.g as f32 / 255.0,
+                ref_color.b as f32 / 255.0,
+            )
+            .into_color();
+            let channels = px.channels();
+            // Convert the current pixel's colour to the l*a*b colour space
+            let r_val: f32 = channels[0] as f32 / 255.0;
+            let g_val: f32 = channels[1] as f32 / 255.0;
+            let b_val: f32 = channels[2] as f32 / 255.0;
 
-        let px_lab: Lab = Srgb::new(r_val, g_val, b_val).into_color();
+            let px_lab: Lab = Srgb::new(r_val, g_val, b_val).into_color();
 
-        let sim = color_sim(lab, px_lab);
-        if sim > 30 {
-            let avg = channels[0] as f32 * 0.3
-                + channels[1] as f32 * 0.59
-                + channels[2] as f32 * 0.11;
-            px = image::Rgba([avg as u8, avg as u8, avg as u8, 255]);
+            let sim = color_sim(lab, px_lab);
+            if sim > 30 {
+                let avg = channels[0] as f32 * 0.3
+                    + channels[1] as f32 * 0.59
+                    + channels[2] as f32 * 0.11;
+                px = image::Rgba([avg as u8, avg as u8, avg as u8, 255]);
+            }
+            img.put_pixel(x, y, px);
         }
-        img.put_pixel(x, y, px);
     }
 
     let raw_pixels = img.into_bytes();

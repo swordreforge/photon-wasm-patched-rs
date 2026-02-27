@@ -1,47 +1,153 @@
 //! Draw text onto an image.
 //! For extended graphic design/text-drawing functionality, see [GDL](https://github.com/silvia-odwyer/gdl),
-//! which is a graphic design library, compatible with Photon.
+//! which is a graphic design/text-drawing library, compatible with Photon.
 
-use crate::iter::ImageIterator;
 use crate::{helpers, PhotonImage};
-use image::{DynamicImage, Rgba};
+use fontdue::{Font, FontSettings};
+use image::{ImageBuffer, Luma, Rgba};
 use imageproc::distance_transform::Norm;
-use imageproc::drawing::draw_text_mut;
 use imageproc::morphology::dilate_mut;
-use rusttype::{Font, Scale};
+use std::collections::HashMap;
+use std::sync::{LazyLock, Mutex};
 
 #[cfg(feature = "enable_wasm")]
 use wasm_bindgen::prelude::*;
 
-/// 字体类型枚举
-#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum FontType {
-    /// 丁卯点阵体（默认，较小字体）
-    DingMaoDianZhen = 0,
-    /// Roboto 常规字体
-    RobotoRegular = 1,
-    /// 站酷高端黑（较大字体）
-    ZzgfDianHei = 2,
+/// 默认字体名称常量
+pub const DEFAULT_FONT_NAME: &str = "default";
+
+/// 默认字体数据（Minikin-1.ttf）
+const DEFAULT_FONT_DATA: &[u8] = include_bytes!("../fonts/Minikin-1.ttf");
+
+/// 字体注册表
+/// 存储字体名称到 Font 的映射
+/// Fontdue 不需要 'static 生命周期，因此避免了 Box::leak 的内存泄漏问题
+static FONT_REGISTRY: LazyLock<Mutex<HashMap<String, Font>>> = LazyLock::new(|| {
+    Mutex::new(HashMap::new())
+});
+
+/// 注册字体数据
+///
+/// # 参数
+/// * `font_name` - 字体名称，用于后续引用
+/// * `font_data` - 字体文件的二进制数据
+pub fn register_font(font_name: &str, font_data: Vec<u8>) {
+    // 检查字体是否已注册，避免重复加载
+    {
+        let registry = FONT_REGISTRY.lock().unwrap();
+        if registry.contains_key(font_name) {
+            return; // 字体已存在，直接返回
+        }
+    }
+
+    // Fontdue 的 Font 是拥有自己数据的结构体，不需要 'static 生命周期
+    // 这避免了 rusttype 中需要的 Box::leak 内存泄漏问题
+    let font = Font::from_bytes(font_data, FontSettings::default())
+        .expect("Invalid font data");
+
+    let mut registry = FONT_REGISTRY.lock().unwrap();
+    registry.insert(font_name.to_string(), font);
 }
 
-/// 根据字体类型加载字体
-/// 默认使用丁卯点阵体
-fn load_font(font_type: FontType) -> Font<'static> {
-    let font_vec: Vec<u8> = match font_type {
-        FontType::DingMaoDianZhen => include_bytes!("../fonts/丁卯点阵体.ttf").to_vec(),
-        FontType::RobotoRegular => include_bytes!("../fonts/Roboto-Regular.ttf").to_vec(),
-        FontType::ZzgfDianHei => include_bytes!("../fonts/zzgf_dianhei.ttf").to_vec(),
-    };
-    // 使用 Box::leak 将数据泄漏到静态生命周期
-    let font_static: &'static [u8] = Box::leak(font_vec.into_boxed_slice());
-    Font::try_from_bytes(font_static).unwrap()
+/// 检查字体是否已注册
+pub fn is_font_registered(font_name: &str) -> bool {
+    let registry = FONT_REGISTRY.lock().unwrap();
+    registry.contains_key(font_name)
+}
+
+/// 获取已注册字体列表
+pub fn get_registered_fonts() -> Vec<String> {
+    let registry = FONT_REGISTRY.lock().unwrap();
+    registry.keys().cloned().collect()
+}
+
+/// 移除已注册的字体
+/// 注意：这只会从注册表中移除引用，无法释放之前通过 Box::leak 分配的内存
+pub fn unregister_font(font_name: &str) -> bool {
+    let mut registry = FONT_REGISTRY.lock().unwrap();
+    registry.remove(font_name).is_some()
+}
+
+/// 根据字体名称加载字体
+///
+/// # 参数
+/// * `font_name` - 字体名称
+///
+/// # 返回
+/// 返回已注册的 Font 引用
+fn load_font(font_name: &str) -> Font {
+    let registry = FONT_REGISTRY.lock().unwrap();
+
+    match registry.get(font_name) {
+        Some(font) => font.clone(),
+        None => {
+            // 如果字体未注册，使用 panic 提示用户
+            panic!(
+                "Font '{}' not registered. Please register it first using register_font(). Available fonts: {:?}",
+                font_name,
+                registry.keys().collect::<Vec<_>>()
+            )
+        }
+    }
+}
+
+/// 在 WASM 环境中注册字体
+/// 
+/// # 参数
+/// * `font_name` - 字体名称，用于后续引用
+/// * `font_data` - 字体文件的二进制数据（Uint8Array）
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn wasm_register_font(font_name: String, font_data: Vec<u8>) {
+    register_font(&font_name, font_data);
+}
+
+/// 在 WASM 环境中检查字体是否已注册
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn wasm_is_font_registered(font_name: String) -> bool {
+    is_font_registered(&font_name)
+}
+
+/// 在 WASM 环境中获取已注册字体列表
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn wasm_get_registered_fonts() -> Vec<String> {
+    get_registered_fonts()
+}
+
+/// 在 WASM 环境中移除已注册的字体
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn wasm_unregister_font(font_name: String) -> bool {
+    unregister_font(&font_name)
+}
+
+/// 在 WASM 环境中清空所有已注册的字体
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn wasm_clear_fonts() {
+    let mut registry = FONT_REGISTRY.lock().unwrap();
+    registry.clear();
+}
+
+/// 初始化默认字体（Minikin-1.ttf）
+/// 在库初始化时调用此函数，将内置的Minikin-1.ttf字体注册为默认字体
+pub fn init_default_font() {
+    register_font(DEFAULT_FONT_NAME, DEFAULT_FONT_DATA.to_vec());
+}
+
+/// 获取默认字体名称
+/// 
+/// # 返回
+/// 返回默认字体的名称字符串
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn get_default_font_name() -> String {
+    DEFAULT_FONT_NAME.to_string()
+}
+
+/// 检查默认字体是否已初始化
+#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
+pub fn is_default_font_initialized() -> bool {
+    is_font_registered(DEFAULT_FONT_NAME)
 }
 
 /// Add bordered-text to an image.
-/// The only font available as of now is Roboto.
-/// Note: A graphic design/text-drawing library is currently being developed, so stay tuned.
 ///
 /// # Arguments
 /// * `photon_image` - A PhotonImage.
@@ -49,6 +155,7 @@ fn load_font(font_type: FontType) -> Font<'static> {
 /// * `x` - x-coordinate of where first letter's 1st pixel should be drawn.
 /// * `y` - y-coordinate of where first letter's 1st pixel should be drawn.
 /// * `font_size` - Font size in pixels of the text to be drawn.
+/// * `font_name` - Name of the registered font to use.
 ///
 /// # Example
 ///
@@ -59,7 +166,9 @@ fn load_font(font_type: FontType) -> Font<'static> {
 ///
 /// // Open the image. A PhotonImage is returned.
 /// let mut img = open_image("img.jpg").expect("File should open");
-/// draw_text_with_border(&mut img, "Welcome to Photon!", 10_i32, 10_i32, 90_f32);
+/// // Make sure to register a font first
+/// photon_rs::text::register_font("my-font", font_data);
+/// draw_text_with_border(&mut img, "Welcome to Photon!", 10_i32, 10_i32, 90_f32, "my-font");
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn draw_text_with_border(
@@ -68,68 +177,92 @@ pub fn draw_text_with_border(
     x: i32,
     y: i32,
     font_size: f32,
-) {
-    draw_text_with_border_with_font(photon_img, text, x, y, font_size, FontType::DingMaoDianZhen);
-}
-
-/// Add bordered-text to an image with specified font type.
-#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
-pub fn draw_text_with_border_with_font(
-    photon_img: &mut PhotonImage,
-    text: &str,
-    x: i32,
-    y: i32,
-    font_size: f32,
-    font_type: FontType,
+    font_name: &str,
 ) {
     let mut image = helpers::dyn_image_from_raw(photon_img).to_rgba8();
+    let (img_width, img_height) = image.dimensions();
 
-    let mut image2: DynamicImage =
-        DynamicImage::new_luma8(image.width(), image.height());
+    // Create a grayscale image for border
+    let mut border_image: ImageBuffer<Luma<u8>, Vec<u8>> = ImageBuffer::new(img_width, img_height);
 
-    let font = load_font(font_type);
-    let scale = Scale {
-        x: font_size * 1.0,
-        y: font_size,
-    };
-    draw_text_mut(
-        &mut image2,
-        Rgba([255u8, 255u8, 255u8, 255u8]),
-        x,
-        y,
-        scale,
-        &font,
-        text,
-    );
+    let font = load_font(font_name);
 
-    let mut image2 = image2.to_luma8();
-    dilate_mut(&mut image2, Norm::LInf, 4u8);
+    // Rasterize text for border (white on black)
+    let mut cursor_x = x as f32;
+    let cursor_y = y as f32;
 
-    // Add a border to the text.
-    for (x, y) in ImageIterator::with_dimension(&image2.dimensions()) {
-        let pixval = 255 - image2.get_pixel(x, y)[0];
-        if pixval != 255 {
-            let new_pix = Rgba([pixval, pixval, pixval, 255]);
-            image.put_pixel(x, y, new_pix);
+    for c in text.chars() {
+        let (metrics, bitmap) = font.rasterize(c, font_size);
+        let bitmap_width = metrics.width;
+        let bitmap_height = metrics.height;
+
+        // Draw white pixels for border
+        for py in 0..bitmap_height {
+            for px in 0..bitmap_width {
+                let alpha = bitmap[py * bitmap_width + px];
+                if alpha > 0 {
+                    let dest_x = (cursor_x + px as f32 + metrics.xmin as f32) as i32;
+                    let dest_y = (cursor_y + py as f32 - metrics.ymin as f32) as i32;
+                    if dest_x >= 0 && dest_x < img_width as i32 && dest_y >= 0 && dest_y < img_height as i32 {
+                        border_image.put_pixel(dest_x as u32, dest_y as u32, Luma([255]));
+                    }
+                }
+            }
+        }
+
+        cursor_x += metrics.advance_width;
+    }
+
+    // Dilate the border image
+    let mut border_image_vec = border_image.clone();
+    dilate_mut(&mut border_image_vec, Norm::LInf, 4u8);
+
+    // Apply border to the main image
+    for px in 0..img_width {
+        for py in 0..img_height {
+            let pixval = 255 - border_image_vec.get_pixel(px, py)[0];
+            if pixval != 255 {
+                let pixel = image.get_pixel(px, py);
+                image.put_pixel(px, py, Rgba([pixval, pixval, pixval, pixel[3]]));
+            }
         }
     }
 
-    draw_text_mut(
-        &mut image,
-        Rgba([255u8, 255u8, 255u8, 255u8]),
-        x + 10,
-        y - 10,
-        scale,
-        &font,
-        text,
-    );
+    // Draw the main text
+    cursor_x = x as f32;
+
+    for c in text.chars() {
+        let (metrics, bitmap) = font.rasterize(c, font_size);
+        let bitmap_width = metrics.width;
+        let bitmap_height = metrics.height;
+
+        for py in 0..bitmap_height {
+            for px in 0..bitmap_width {
+                let alpha = bitmap[py * bitmap_width + px];
+                if alpha > 0 {
+                    let dest_x = (cursor_x + px as f32 + metrics.xmin as f32) as i32;
+                    let dest_y = (cursor_y + py as f32 - metrics.ymin as f32) as i32;
+                    if dest_x >= 0 && dest_x < img_width as i32 && dest_y >= 0 && dest_y < img_height as i32 {
+                        let pixel = image.get_pixel(dest_x as u32, dest_y as u32);
+                        // Blend white text with background
+                        let blend = alpha as f32 / 255.0;
+                        let r = (pixel[0] as f32 * (1.0 - blend) + 255.0 * blend) as u8;
+                        let g = (pixel[1] as f32 * (1.0 - blend) + 255.0 * blend) as u8;
+                        let b = (pixel[2] as f32 * (1.0 - blend) + 255.0 * blend) as u8;
+                        image.put_pixel(dest_x as u32, dest_y as u32, Rgba([r, g, b, 255]));
+                    }
+                }
+            }
+        }
+
+        cursor_x += metrics.advance_width;
+    }
+
     let dynimage = image::DynamicImage::ImageRgba8(image);
     photon_img.raw_pixels = dynimage.into_bytes();
 }
 
 /// Add text to an image.
-/// The only font available as of now is Roboto.
-/// Note: A graphic design/text-drawing library is currently being developed, so stay tuned.
 ///
 /// # Arguments
 /// * `photon_image` - A PhotonImage.
@@ -137,6 +270,7 @@ pub fn draw_text_with_border_with_font(
 /// * `x` - x-coordinate of where first letter's 1st pixel should be drawn.
 /// * `y` - y-coordinate of where first letter's 1st pixel should be drawn.
 /// * `font_size` - Font size in pixels of the text to be drawn.
+/// * `font_name` - Name of the registered font to use.
 ///
 /// # Example
 ///
@@ -147,7 +281,9 @@ pub fn draw_text_with_border_with_font(
 ///
 /// // Open the image. A PhotonImage is returned.
 /// let mut img = open_image("img.jpg").expect("File should open");
-/// draw_text(&mut img, "Welcome to Photon!", 10_i32, 10_i32, 90_f32);
+/// // Make sure to register a font first
+/// photon_rs::text::register_font("my-font", font_data);
+/// draw_text(&mut img, "Welcome to Photon!", 10_i32, 10_i32, 90_f32, "my-font");
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn draw_text(
@@ -156,43 +292,49 @@ pub fn draw_text(
     x: i32,
     y: i32,
     font_size: f32,
-) {
-    draw_text_with_font(photon_img, text, x, y, font_size, FontType::DingMaoDianZhen);
-}
-
-/// Add text to an image with specified font type.
-#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
-pub fn draw_text_with_font(
-    photon_img: &mut PhotonImage,
-    text: &str,
-    x: i32,
-    y: i32,
-    font_size: f32,
-    font_type: FontType,
+    font_name: &str,
 ) {
     let mut image = helpers::dyn_image_from_raw(photon_img).to_rgba8();
+    let (img_width, img_height) = image.dimensions();
 
-    let font = load_font(font_type);
-    let scale = Scale {
-        x: font_size * 1.0,
-        y: font_size,
-    };
+    let font = load_font(font_name);
 
-    draw_text_mut(
-        &mut image,
-        Rgba([255u8, 255u8, 255u8, 255u8]),
-        x,
-        y,
-        scale,
-        &font,
-        text,
-    );
+    // Rasterize text
+    let mut cursor_x = x as f32;
+    let cursor_y = y as f32;
+
+    for c in text.chars() {
+        let (metrics, bitmap) = font.rasterize(c, font_size);
+        let bitmap_width = metrics.width;
+        let bitmap_height = metrics.height;
+
+        for py in 0..bitmap_height {
+            for px in 0..bitmap_width {
+                let alpha = bitmap[py * bitmap_width + px];
+                if alpha > 0 {
+                    let dest_x = (cursor_x + px as f32 + metrics.xmin as f32) as i32;
+                    let dest_y = (cursor_y + py as f32 - metrics.ymin as f32) as i32;
+                    if dest_x >= 0 && dest_x < img_width as i32 && dest_y >= 0 && dest_y < img_height as i32 {
+                        let pixel = image.get_pixel(dest_x as u32, dest_y as u32);
+                        // Blend white text with background
+                        let blend = alpha as f32 / 255.0;
+                        let r = (pixel[0] as f32 * (1.0 - blend) + 255.0 * blend) as u8;
+                        let g = (pixel[1] as f32 * (1.0 - blend) + 255.0 * blend) as u8;
+                        let b = (pixel[2] as f32 * (1.0 - blend) + 255.0 * blend) as u8;
+                        image.put_pixel(dest_x as u32, dest_y as u32, Rgba([r, g, b, 255]));
+                    }
+                }
+            }
+        }
+
+        cursor_x += metrics.advance_width;
+    }
+
     let dynimage = image::DynamicImage::ImageRgba8(image);
     photon_img.raw_pixels = dynimage.into_bytes();
 }
 
 /// Add text to an image with custom color.
-/// The only font available as of now is Roboto.
 ///
 /// # Arguments
 /// * `photon_image` - A PhotonImage.
@@ -203,6 +345,7 @@ pub fn draw_text_with_font(
 /// * `r` - Red channel (0-255).
 /// * `g` - Green channel (0-255).
 /// * `b` - Blue channel (0-255).
+/// * `font_name` - Name of the registered font to use.
 ///
 /// # Example
 ///
@@ -212,7 +355,9 @@ pub fn draw_text_with_font(
 /// use photon_rs::text::draw_text_with_color;
 ///
 /// let mut img = open_image("img.jpg").expect("File should open");
-/// draw_text_with_color(&mut img, "Hello!", 10_i32, 10_i32, 90_f32, 255u8, 0u8, 0u8);
+/// // Make sure to register a font first
+/// photon_rs::text::register_font("my-font", font_data);
+/// draw_text_with_color(&mut img, "Hello!", 10_i32, 10_i32, 90_f32, 255u8, 0u8, 0u8, "my-font");
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn draw_text_with_color(
@@ -224,46 +369,49 @@ pub fn draw_text_with_color(
     r: u8,
     g: u8,
     b: u8,
-) {
-    draw_text_with_color_and_font(photon_img, text, x, y, font_size, r, g, b, FontType::DingMaoDianZhen);
-}
-
-/// Add text to an image with custom color and specified font type.
-#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
-pub fn draw_text_with_color_and_font(
-    photon_img: &mut PhotonImage,
-    text: &str,
-    x: i32,
-    y: i32,
-    font_size: f32,
-    r: u8,
-    g: u8,
-    b: u8,
-    font_type: FontType,
+    font_name: &str,
 ) {
     let mut image = helpers::dyn_image_from_raw(photon_img).to_rgba8();
+    let (img_width, img_height) = image.dimensions();
 
-    let font = load_font(font_type);
-    let scale = Scale {
-        x: font_size * 1.0,
-        y: font_size,
-    };
+    let font = load_font(font_name);
 
-    draw_text_mut(
-        &mut image,
-        Rgba([r, g, b, 255u8]),
-        x,
-        y,
-        scale,
-        &font,
-        text,
-    );
+    // Rasterize text
+    let mut cursor_x = x as f32;
+    let cursor_y = y as f32;
+
+    for c in text.chars() {
+        let (metrics, bitmap) = font.rasterize(c, font_size);
+        let bitmap_width = metrics.width;
+        let bitmap_height = metrics.height;
+
+        for py in 0..bitmap_height {
+            for px in 0..bitmap_width {
+                let alpha = bitmap[py * bitmap_width + px];
+                if alpha > 0 {
+                    let dest_x = (cursor_x + px as f32 + metrics.xmin as f32) as i32;
+                    let dest_y = (cursor_y + py as f32 - metrics.ymin as f32) as i32;
+                    if dest_x >= 0 && dest_x < img_width as i32 && dest_y >= 0 && dest_y < img_height as i32 {
+                        let pixel = image.get_pixel(dest_x as u32, dest_y as u32);
+                        // Blend custom color text with background
+                        let blend = alpha as f32 / 255.0;
+                        let new_r = (pixel[0] as f32 * (1.0 - blend) + r as f32 * blend) as u8;
+                        let new_g = (pixel[1] as f32 * (1.0 - blend) + g as f32 * blend) as u8;
+                        let new_b = (pixel[2] as f32 * (1.0 - blend) + b as f32 * blend) as u8;
+                        image.put_pixel(dest_x as u32, dest_y as u32, Rgba([new_r, new_g, new_b, 255]));
+                    }
+                }
+            }
+        }
+
+        cursor_x += metrics.advance_width;
+    }
+
     let dynimage = image::DynamicImage::ImageRgba8(image);
     photon_img.raw_pixels = dynimage.into_bytes();
 }
 
 /// Add bordered-text to an image with custom color.
-/// The only font available as of now is Roboto.
 ///
 /// # Arguments
 /// * `photon_image` - A PhotonImage.
@@ -274,6 +422,7 @@ pub fn draw_text_with_color_and_font(
 /// * `r` - Red channel (0-255).
 /// * `g` - Green channel (0-255).
 /// * `b` - Blue channel (0-255).
+/// * `font_name` - Name of the registered font to use.
 ///
 /// # Example
 ///
@@ -283,7 +432,9 @@ pub fn draw_text_with_color_and_font(
 /// use photon_rs::text::draw_text_with_border_and_color;
 ///
 /// let mut img = open_image("img.jpg").expect("File should open");
-/// draw_text_with_border_and_color(&mut img, "Hello!", 10_i32, 10_i32, 90_f32, 255u8, 0u8, 0u8);
+/// // Make sure to register a font first
+/// photon_rs::text::register_font("my-font", font_data);
+/// draw_text_with_border_and_color(&mut img, "Hello!", 10_i32, 10_i32, 90_f32, 255u8, 0u8, 0u8, "my-font");
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn draw_text_with_border_and_color(
@@ -295,65 +446,87 @@ pub fn draw_text_with_border_and_color(
     r: u8,
     g: u8,
     b: u8,
-) {
-    draw_text_with_border_and_color_and_font(photon_img, text, x, y, font_size, r, g, b, FontType::DingMaoDianZhen);
-}
-
-/// Add bordered-text to an image with custom color and specified font type.
-#[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
-pub fn draw_text_with_border_and_color_and_font(
-    photon_img: &mut PhotonImage,
-    text: &str,
-    x: i32,
-    y: i32,
-    font_size: f32,
-    r: u8,
-    g: u8,
-    b: u8,
-    font_type: FontType,
+    font_name: &str,
 ) {
     let mut image = helpers::dyn_image_from_raw(photon_img).to_rgba8();
-    let mut image2: DynamicImage = DynamicImage::new_luma8(image.width(), image.height());
+    let (img_width, img_height) = image.dimensions();
 
-    let font = load_font(font_type);
-    let scale = Scale {
-        x: font_size * 1.0,
-        y: font_size,
-    };
+    // Create a grayscale image for border
+    let mut border_image: ImageBuffer<Luma<u8>, Vec<u8>> = ImageBuffer::new(img_width, img_height);
 
-    // 绘制边框
-    draw_text_mut(
-        &mut image2,
-        Rgba([255u8, 255u8, 255u8, 255u8]),
-        x,
-        y,
-        scale,
-        &font,
-        text,
-    );
+    let font = load_font(font_name);
 
-    let mut image2 = image2.to_luma8();
-    dilate_mut(&mut image2, Norm::LInf, 4u8);
+    // Rasterize text for border (white on black)
+    let mut cursor_x = x as f32;
+    let cursor_y = y as f32;
 
-    // 添加黑色边框
-    for (px, py) in ImageIterator::with_dimension(&image2.dimensions()) {
-        let pixval = 255 - image2.get_pixel(px, py)[0];
-        if pixval != 255 {
-            let new_pix = Rgba([0u8, 0u8, 0u8, 255u8]);
-            image.put_pixel(px, py, new_pix);
+    for c in text.chars() {
+        let (metrics, bitmap) = font.rasterize(c, font_size);
+        let bitmap_width = metrics.width;
+        let bitmap_height = metrics.height;
+
+        // Draw white pixels for border
+        for py in 0..bitmap_height {
+            for px in 0..bitmap_width {
+                let alpha = bitmap[py * bitmap_width + px];
+                if alpha > 0 {
+                    let dest_x = (cursor_x + px as f32 + metrics.xmin as f32) as i32;
+                    let dest_y = (cursor_y + py as f32 - metrics.ymin as f32) as i32;
+                    if dest_x >= 0 && dest_x < img_width as i32 && dest_y >= 0 && dest_y < img_height as i32 {
+                        border_image.put_pixel(dest_x as u32, dest_y as u32, Luma([255]));
+                    }
+                }
+            }
+        }
+
+        cursor_x += metrics.advance_width;
+    }
+
+    // Dilate the border image
+    let mut border_image_vec = border_image.clone();
+    dilate_mut(&mut border_image_vec, Norm::LInf, 4u8);
+
+    // Apply black border to the main image
+    for px in 0..img_width {
+        for py in 0..img_height {
+            let pixval = 255 - border_image_vec.get_pixel(px, py)[0];
+            if pixval != 255 {
+                let pixel = image.get_pixel(px, py);
+                image.put_pixel(px, py, Rgba([0, 0, 0, pixel[3]]));
+            }
         }
     }
 
-    // 绘制自定义颜色的文本
-    draw_text_mut(
-        &mut image,
-        Rgba([r, g, b, 255u8]),
-        x + 10,
-        y - 10,
-        scale,
-        &font,
-        text,
-    );
+    // Draw the main text with custom color
+    cursor_x = x as f32;
+
+    for c in text.chars() {
+        let (metrics, bitmap) = font.rasterize(c, font_size);
+        let bitmap_width = metrics.width;
+        let bitmap_height = metrics.height;
+
+        for py in 0..bitmap_height {
+            for px in 0..bitmap_width {
+                let alpha = bitmap[py * bitmap_width + px];
+                if alpha > 0 {
+                    let dest_x = (cursor_x + px as f32 + metrics.xmin as f32) as i32;
+                    let dest_y = (cursor_y + py as f32 - metrics.ymin as f32) as i32;
+                    if dest_x >= 0 && dest_x < img_width as i32 && dest_y >= 0 && dest_y < img_height as i32 {
+                        let pixel = image.get_pixel(dest_x as u32, dest_y as u32);
+                        // Blend custom color text with background
+                        let blend = alpha as f32 / 255.0;
+                        let new_r = (pixel[0] as f32 * (1.0 - blend) + r as f32 * blend) as u8;
+                        let new_g = (pixel[1] as f32 * (1.0 - blend) + g as f32 * blend) as u8;
+                        let new_b = (pixel[2] as f32 * (1.0 - blend) + b as f32 * blend) as u8;
+                        image.put_pixel(dest_x as u32, dest_y as u32, Rgba([new_r, new_g, new_b, 255]));
+                    }
+                }
+            }
+        }
+
+        cursor_x += metrics.advance_width;
+    }
+
     let dynimage = image::DynamicImage::ImageRgba8(image);
     photon_img.raw_pixels = dynimage.into_bytes();
 }

@@ -1,10 +1,6 @@
 //! Monochrome-related effects and greyscaling/duotoning.
 
-use crate::helpers;
-use crate::iter::ImageIterator;
 use crate::PhotonImage;
-use image::Pixel;
-use image::{GenericImage, GenericImageView};
 
 #[cfg(feature = "enable_wasm")]
 use wasm_bindgen::prelude::*;
@@ -32,36 +28,7 @@ use wasm_bindgen::prelude::*;
 ///
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn monochrome(img: &mut PhotonImage, r_offset: u32, g_offset: u32, b_offset: u32) {
-    let end = img.get_raw_pixels().len();
-
-    for i in (0..end).step_by(4) {
-        let r_val = img.raw_pixels[i] as u32;
-        let g_val = img.raw_pixels[i + 1] as u32;
-        let b_val = img.raw_pixels[i + 2] as u32;
-        let mut avg: u32 = (r_val + g_val + b_val) / 3;
-        if avg >= 255 {
-            avg = 255
-        }
-        let new_r = if avg + r_offset < 255 {
-            avg as u8 + r_offset as u8
-        } else {
-            255
-        };
-        let new_g = if avg + g_offset < 255 {
-            avg as u8 + g_offset as u8
-        } else {
-            255
-        };
-        let new_b = if avg + b_offset < 255 {
-            avg as u8 + b_offset as u8
-        } else {
-            255
-        };
-
-        img.raw_pixels[i] = new_r;
-        img.raw_pixels[i + 1] = new_g;
-        img.raw_pixels[i + 2] = new_b;
-    }
+    crate::simd::monochrome_simd(img, r_offset, g_offset, b_offset);
 }
 
 /// Convert an image to sepia.
@@ -81,30 +48,7 @@ pub fn monochrome(img: &mut PhotonImage, r_offset: u32, g_offset: u32, b_offset:
 ///
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn sepia(img: &mut PhotonImage) {
-    let end = img.get_raw_pixels().len();
-
-    for i in (0..end).step_by(4) {
-        let r_val = img.raw_pixels[i] as f32;
-        let g_val = img.raw_pixels[i + 1] as f32;
-        let b_val = img.raw_pixels[i + 2] as f32;
-        let mut avg = 0.3 * r_val + 0.59 * g_val + 0.11 * b_val;
-        if avg >= 255.0 {
-            avg = 255.0
-        }
-        let new_r = if avg as u32 + 100 < 255 {
-            avg as u8 + 100
-        } else {
-            255
-        };
-        let new_g = if avg as u32 + 50 < 255 {
-            avg as u8 + 50
-        } else {
-            255
-        };
-
-        img.raw_pixels[i] = new_r;
-        img.raw_pixels[i + 1] = new_g;
-    }
+    crate::simd::sepia_simd(img);
 }
 
 /// Convert an image to grayscale using the conventional averaging algorithm.
@@ -123,21 +67,8 @@ pub fn sepia(img: &mut PhotonImage) {
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn grayscale(img: &mut PhotonImage) {
-    let end = img.get_raw_pixels().len();
-
-    for i in (0..end).step_by(4) {
-        let r_val = img.raw_pixels[i] as u32;
-        let g_val = img.raw_pixels[i + 1] as u32;
-        let b_val = img.raw_pixels[i + 2] as u32;
-        let mut avg: u32 = (r_val + g_val + b_val) / 3;
-        if avg >= 255 {
-            avg = 255
-        }
-
-        img.raw_pixels[i] = avg as u8;
-        img.raw_pixels[i + 1] = avg as u8;
-        img.raw_pixels[i + 2] = avg as u8;
-    }
+    // Use SIMD optimized version
+    crate::simd::grayscale_simd(img);
 }
 
 /// Convert an image to grayscale with a human corrected factor, to account for human vision.
@@ -156,19 +87,8 @@ pub fn grayscale(img: &mut PhotonImage) {
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn grayscale_human_corrected(img: &mut PhotonImage) {
-    let end = img.get_raw_pixels().len();
-
-    for i in (0..end).step_by(4) {
-        let r_val = img.raw_pixels[i] as f32;
-        let g_val = img.raw_pixels[i + 1] as f32;
-        let b_val = img.raw_pixels[i + 2] as f32;
-
-        let avg: u8 = (r_val * 0.3 + g_val * 0.59 + b_val * 0.11) as u8;
-
-        img.raw_pixels[i] = avg;
-        img.raw_pixels[i + 1] = avg;
-        img.raw_pixels[i + 2] = avg;
-    }
+    // Use SIMD optimized version
+    crate::simd::grayscale_human_corrected_simd(img);
 }
 
 /// Desaturate an image by getting the min/max of each pixel's RGB values.
@@ -187,23 +107,7 @@ pub fn grayscale_human_corrected(img: &mut PhotonImage) {
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn desaturate(img: &mut PhotonImage) {
-    let end = img.get_raw_pixels().len();
-
-    for i in (0..end).step_by(4) {
-        let r_val = img.raw_pixels[i] as u32;
-        let g_val = img.raw_pixels[i + 1] as u32;
-        let b_val = img.raw_pixels[i + 2] as u32;
-
-        // get the max and min vals of a pixel's 3 rgb values by sorting a vec of these
-        let mut rgb_vals = [r_val, g_val, b_val];
-        rgb_vals.sort_unstable();
-
-        let gray: u8 = ((rgb_vals[0] + rgb_vals[2]) / 2) as u8;
-
-        img.raw_pixels[i] = gray;
-        img.raw_pixels[i + 1] = gray;
-        img.raw_pixels[i + 2] = gray;
-    }
+    crate::simd::desaturate_simd(img);
 }
 
 /// Uses a min. decomposition algorithm to convert an image to greyscale.
@@ -223,7 +127,7 @@ pub fn desaturate(img: &mut PhotonImage) {
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn decompose_min(img: &mut PhotonImage) {
-    let end = img.get_raw_pixels().len();
+    let end = img.get_raw_pixels_slice().len();
 
     for i in (0..end).step_by(4) {
         let r_val = img.raw_pixels[i] as u32;
@@ -259,7 +163,7 @@ pub fn decompose_min(img: &mut PhotonImage) {
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn decompose_max(img: &mut PhotonImage) {
-    let end = img.get_raw_pixels().len();
+    let end = img.get_raw_pixels_slice().len();
 
     for i in (0..end).step_by(4) {
         let r_val = img.raw_pixels[i] as u32;
@@ -296,26 +200,24 @@ pub fn decompose_max(img: &mut PhotonImage) {
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn grayscale_shades(photon_image: &mut PhotonImage, num_shades: u8) {
-    let mut img = helpers::dyn_image_from_raw(photon_image);
+    let conversion: f32 = 255.0 / (num_shades as f32 - 1.0);
+    let pixels = photon_image.raw_pixels.as_mut_slice();
+    let len = pixels.len();
 
-    for (x, y) in ImageIterator::with_dimension(&img.dimensions()) {
-        let px = img.get_pixel(x, y);
-
-        let conversion: f32 = 255.0 / (num_shades as f32 - 1.0);
-        let channels = px.channels();
-        let (r_val, g_val, b_val) =
-            (channels[0] as u32, channels[1] as u32, channels[2] as u32);
+    for i in (0..len).step_by(4) {
+        let r_val = pixels[i] as u32;
+        let g_val = pixels[i + 1] as u32;
+        let b_val = pixels[i + 2] as u32;
 
         let avg: f32 = (r_val + g_val + b_val) as f32 / 3.0;
-
         let dividend = avg / conversion;
-
         let gray = ((dividend + 0.5) * conversion) as u8;
 
-        img.put_pixel(x, y, image::Rgba([gray, gray, gray, 255]));
+        pixels[i] = gray;
+        pixels[i + 1] = gray;
+        pixels[i + 2] = gray;
+        // Alpha channel remains unchanged
     }
-    let raw_pixels = img.into_bytes();
-    photon_image.raw_pixels = raw_pixels;
 }
 
 /// Convert an image to grayscale by setting a pixel's 3 RGB values to the Red channel's value.
@@ -392,22 +294,17 @@ pub fn b_grayscale(photon_image: &mut PhotonImage) {
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn single_channel_grayscale(photon_image: &mut PhotonImage, channel: usize) {
-    let mut img = helpers::dyn_image_from_raw(photon_image);
+    let pixels = photon_image.raw_pixels.as_mut_slice();
+    let len = pixels.len();
 
-    for (x, y) in ImageIterator::with_dimension(&img.dimensions()) {
-        let px = img.get_pixel(x, y);
+    for i in (0..len).step_by(4) {
+        let channel_data = pixels[i + channel];
 
-        let channels = px.channels();
-        let channel_data = channels[channel];
-
-        img.put_pixel(
-            x,
-            y,
-            image::Rgba([channel_data, channel_data, channel_data, 255]),
-        );
+        pixels[i] = channel_data;
+        pixels[i + 1] = channel_data;
+        pixels[i + 2] = channel_data;
+        // Alpha channel remains unchanged
     }
-    let raw_pixels = img.into_bytes();
-    photon_image.raw_pixels = raw_pixels;
 }
 
 /// Threshold an image using a standard thresholding algorithm.
@@ -427,23 +324,6 @@ pub fn single_channel_grayscale(photon_image: &mut PhotonImage, channel: usize) 
 /// ```
 #[cfg_attr(feature = "enable_wasm", wasm_bindgen)]
 pub fn threshold(img: &mut PhotonImage, threshold: u32) {
-    let end = img.get_raw_pixels().len();
-
-    for i in (0..end).step_by(4) {
-        let r = img.raw_pixels[i] as f32;
-        let g = img.raw_pixels[i + 1] as f32;
-        let b = img.raw_pixels[i + 2] as f32;
-
-        let mut v = 0.2126 * r + 0.7152 * g + 0.072 * b;
-
-        if v >= threshold as f32 {
-            v = 255.0;
-        } else {
-            v = 0.0;
-        }
-
-        img.raw_pixels[i] = v as u8;
-        img.raw_pixels[i + 1] = v as u8;
-        img.raw_pixels[i + 2] = v as u8;
-    }
+    // Use SIMD optimized version
+    crate::simd::threshold_simd(img, threshold);
 }

@@ -1,47 +1,129 @@
-use wasm_bindgen::prelude::*;
-use photon_rs::{PhotonImage, filters, native, monochrome, transform, effects, colour_spaces, text};
-use base64::Engine;
-use image::{GenericImage, GenericImageView, Pixel};
+mod types;
+mod brush;
+mod edge_refinement;
+mod image_operations;
 
+use wasm_bindgen::prelude::*;
+use std::collections::VecDeque;
+
+// ==================== 重新导出类型 ====================
+
+pub use types::{ColorSpace, BrushType, BlendMode, BrushConfig, StrokePoint};
+pub use brush::{BrushStroke, DataConverter, StrokeGenerator, BrushRenderer};
+
+// ==================== 重新导出边缘优化模块 ====================
+
+pub use edge_refinement::{
+    create_polygon_mask,
+    create_circular_mask,
+    apply_mask_to_image,
+    refine_mask_edges,
+    auto_crop_by_color,
+};
+
+// ==================== 图像处理器 ====================
+
+/// 图像处理器结构体
+/// 这是公共 API，封装了所有图像处理功能
 #[wasm_bindgen]
 pub struct ImageProcessor {
-    image: PhotonImage,
-    original_image: PhotonImage,
+    image: photon_rs::PhotonImage,
+    original_image: photon_rs::PhotonImage,
     original_bytes: Vec<u8>,
     width: u32,
     height: u32,
+    // 笔刷相关字段
+    current_stroke: Option<BrushStroke>,
+    strokes_history: VecDeque<BrushStroke>,
+    max_history_size: usize,
+}
+
+impl ImageProcessor {
+    /// 创建内部处理器实例
+    fn create_internal(&self) -> image_operations::ImageProcessor {
+        image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        }
+    }
+
+    /// 更新图像数据
+    fn update_from_internal(&mut self, internal: image_operations::ImageProcessor) {
+        self.image = internal.image;
+        self.original_image = internal.original_image;
+        self.width = internal.width;
+        self.height = internal.height;
+    }
 }
 
 #[wasm_bindgen]
 impl ImageProcessor {
     #[wasm_bindgen(constructor)]
     pub fn new(width: u32, height: u32, data: &[u8]) -> Result<ImageProcessor, JsValue> {
-        let image = PhotonImage::new(data.to_vec(), width, height);
+        let processor = image_operations::ImageProcessor::new(width, height, data)
+            .map_err(|e| JsValue::from_str(&e))?;
         Ok(ImageProcessor {
-            image: image.clone(),
-            original_image: image,
-            original_bytes: data.to_vec(),
-            width,
-            height,
+            image: processor.image,
+            original_image: processor.original_image,
+            original_bytes: processor.original_bytes,
+            width: processor.width,
+            height: processor.height,
+            current_stroke: None,
+            strokes_history: VecDeque::new(),
+            max_history_size: 50,
         })
     }
 
     pub fn new_from_bytes(bytes: &[u8]) -> Result<ImageProcessor, JsValue> {
-        let image = native::open_image_from_bytes(bytes)
-            .map_err(|e| JsValue::from_str(&format!("Failed to open image: {}", e)))?;
-        let width = image.get_width();
-        let height = image.get_height();
+        let processor = image_operations::ImageProcessor::new_from_bytes(bytes)
+            .map_err(|e| JsValue::from_str(&e))?;
         Ok(ImageProcessor {
-            image: image.clone(),
-            original_image: image,
-            original_bytes: bytes.to_vec(),
-            width,
-            height,
+            image: processor.image,
+            original_image: processor.original_image,
+            original_bytes: processor.original_bytes,
+            width: processor.width,
+            height: processor.height,
+            current_stroke: None,
+            strokes_history: VecDeque::new(),
+            max_history_size: 50,
         })
     }
 
+    /// 创建指定大小的白色画布
+    #[allow(unused)]
+    #[wasm_bindgen(static_method_of = ImageProcessor)]
+    pub fn new_white_canvas(width: u32, height: u32) -> Result<ImageProcessor, JsValue> {
+        let pixel_count = (width * height) as usize;
+        let data = vec![255u8; pixel_count * 4];
+
+        let image = photon_rs::PhotonImage::new(data, width, height);
+        let original_bytes = vec![255u8; pixel_count * 4];
+
+        Ok(ImageProcessor {
+            image: image.clone(),
+            original_image: image,
+            original_bytes,
+            width,
+            height,
+            current_stroke: None,
+            strokes_history: VecDeque::new(),
+            max_history_size: 50,
+        })
+    }
+
+    // ==================== 图像基本信息 ====================
+
     pub fn to_base64(&self) -> String {
-        self.image.get_base64()
+        image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        }.to_base64()
     }
 
     pub fn get_width(&self) -> u32 {
@@ -53,823 +135,1744 @@ impl ImageProcessor {
     }
 
     pub fn get_bytes(&self) -> Vec<u8> {
-        self.image.get_bytes()
+        image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        }.get_bytes()
     }
 
-    // 获取估算的文件大小（字节）
+    pub fn get_raw_pixels(&self) -> Vec<u8> {
+        image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        }.get_raw_pixels()
+    }
+
     pub fn get_estimated_filesize(&self) -> u64 {
-        self.image.get_estimated_filesize()
+        image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        }.get_estimated_filesize()
     }
 
-    // 图像格式转换
+    // ==================== 图像格式转换 ====================
+
     pub fn to_jpeg(&mut self, quality: u8) -> String {
-        base64::engine::general_purpose::STANDARD.encode(&self.image.get_bytes_jpeg(quality))
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        let result = processor.to_jpeg(quality);
+        self.image = processor.image;
+        result
     }
 
     pub fn to_png(&mut self) -> String {
-        base64::engine::general_purpose::STANDARD.encode(&self.image.get_bytes())
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        let result = processor.to_png();
+        self.image = processor.image;
+        result
     }
 
     pub fn to_webp(&mut self, quality: u8) -> String {
-        base64::engine::general_purpose::STANDARD.encode(&self.image.get_bytes_webp_with_quality(quality))
-    }
-
-    // 文本绘制功能
-    pub fn draw_text(&mut self, text: &str, x: i32, y: i32, font_size: f32) {
-        text::draw_text(&mut self.image, text, x, y, font_size);
-    }
-
-    /// 绘制文本，支持选择字体类型
-    /// font_type: 0-2, 对应不同的字体
-    pub fn draw_text_with_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, font_type: u8) {
-        let ft = match font_type {
-            0 => text::FontType::DingMaoDianZhen,
-            1 => text::FontType::RobotoRegular,
-            2 => text::FontType::ZzgfDianHei,
-            _ => text::FontType::DingMaoDianZhen,
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
         };
-        text::draw_text_with_font(&mut self.image, text, x, y, font_size, ft);
+        let result = processor.to_webp(quality);
+        self.image = processor.image;
+        result
     }
 
-    pub fn draw_text_with_shadow(&mut self, text: &str, x: i32, y: i32, font_size: f32) {
-        text::draw_text_with_border(&mut self.image, text, x, y, font_size);
-    }
+    // ==================== 重置功能 ====================
 
-    /// 绘制带阴影的文本，支持选择字体类型
-    /// font_type: 0-2, 对应不同的字体
-    pub fn draw_text_with_shadow_and_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, font_type: u8) {
-        let ft = match font_type {
-            0 => text::FontType::DingMaoDianZhen,
-            1 => text::FontType::RobotoRegular,
-            2 => text::FontType::ZzgfDianHei,
-            _ => text::FontType::DingMaoDianZhen,
+    pub fn reset(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
         };
-        text::draw_text_with_border_with_font(&mut self.image, text, x, y, font_size, ft);
+        processor.reset();
+        self.image = processor.image;
+        self.original_image = processor.original_image;
     }
 
-    pub fn draw_text_with_color(&mut self, text: &str, x: i32, y: i32, font_size: f32, r: u8, g: u8, b: u8) {
-        text::draw_text_with_color(&mut self.image, text, x, y, font_size, r, g, b);
-    }
+    // ==================== 文本绘制功能 ====================
 
-    /// 绘制带颜色的文本，支持选择字体类型
-    /// font_type: 0-2, 对应不同的字体
-    pub fn draw_text_with_color_and_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, r: u8, g: u8, b: u8, font_type: u8) {
-        let ft = match font_type {
-            0 => text::FontType::DingMaoDianZhen,
-            1 => text::FontType::RobotoRegular,
-            2 => text::FontType::ZzgfDianHei,
-            _ => text::FontType::DingMaoDianZhen,
+    pub fn draw_text(
+        &mut self,
+        text: &str,
+        x: i32,
+        y: i32,
+        font_size: f32,
+        font_type: Option<u8>,
+        has_shadow: Option<bool>,
+        color_r: Option<u8>,
+        color_g: Option<u8>,
+        color_b: Option<u8>,
+    ) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
         };
-        text::draw_text_with_color_and_font(&mut self.image, text, x, y, font_size, r, g, b, ft);
+        processor.draw_text(text, x, y, font_size, font_type, has_shadow, color_r, color_g, color_b);
+        self.image = processor.image;
     }
 
-    pub fn draw_text_with_shadow_and_color(&mut self, text: &str, x: i32, y: i32, font_size: f32, r: u8, g: u8, b: u8) {
-        text::draw_text_with_border_and_color(&mut self.image, text, x, y, font_size, r, g, b);
-    }
-
-    /// 绘制带阴影和颜色的文本，支持选择字体类型
-    /// font_type: 0-2, 对应不同的字体
-    pub fn draw_text_with_shadow_and_color_and_font(&mut self, text: &str, x: i32, y: i32, font_size: f32, r: u8, g: u8, b: u8, font_type: u8) {
-        let ft = match font_type {
-            0 => text::FontType::DingMaoDianZhen,
-            1 => text::FontType::RobotoRegular,
-            2 => text::FontType::ZzgfDianHei,
-            _ => text::FontType::DingMaoDianZhen,
+    pub fn draw_text_with_color_and_font(
+        &mut self,
+        text: &str,
+        x: i32,
+        y: i32,
+        font_size: f32,
+        r: u8,
+        g: u8,
+        b: u8,
+        font_type: u8,
+    ) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
         };
-        text::draw_text_with_border_and_color_and_font(&mut self.image, text, x, y, font_size, r, g, b, ft);
+        processor.draw_text_with_color_and_font(text, x, y, font_size, r, g, b, font_type);
+        self.image = processor.image;
     }
 
-    // 图像滤镜
+    pub fn draw_text_with_shadow_and_color_and_font(
+        &mut self,
+        text: &str,
+        x: i32,
+        y: i32,
+        font_size: f32,
+        r: u8,
+        g: u8,
+        b: u8,
+        font_type: u8,
+    ) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.draw_text_with_shadow_and_color_and_font(text, x, y, font_size, r, g, b, font_type);
+        self.image = processor.image;
+    }
+
+    pub fn draw_text_with_font_name(
+        &mut self,
+        text: &str,
+        x: i32,
+        y: i32,
+        font_size: f32,
+        font_name: &str,
+        has_shadow: Option<bool>,
+        color_r: Option<u8>,
+        color_g: Option<u8>,
+        color_b: Option<u8>,
+    ) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.draw_text_with_font_name(text, x, y, font_size, font_name, has_shadow, color_r, color_g, color_b);
+        self.image = processor.image;
+    }
+
+    // ==================== 图像滤镜 ====================
+
     pub fn apply_grayscale(&mut self) {
-        filters::filter(&mut self.image, "grayscale");
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_grayscale();
+        self.image = processor.image;
     }
 
     pub fn apply_sepia(&mut self) {
-        filters::filter(&mut self.image, "sepia");
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_sepia();
+        self.image = processor.image;
     }
 
     pub fn apply_invert(&mut self) {
-        filters::filter(&mut self.image, "invert");
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_invert();
+        self.image = processor.image;
     }
 
     pub fn apply_threshold(&mut self, threshold: u32) {
-        monochrome::threshold(&mut self.image, threshold);
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_threshold(threshold);
+        self.image = processor.image;
     }
 
-    // 更多预设滤镜
     pub fn apply_preset_filter(&mut self, filter_name: &str) {
-        filters::filter(&mut self.image, filter_name);
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_preset_filter(filter_name);
+        self.image = processor.image;
     }
-
-    // 特殊效果
-    pub fn apply_pixelate(&mut self, pixel_size: i32) {
-        effects::pixelize(&mut self.image, pixel_size);
-    }
-
-    pub fn apply_halftone(&mut self) {
-        effects::halftone(&mut self.image);
-    }
-
-    pub fn apply_oil(&mut self, radius: i32, intensity: f64) {
-        effects::oil(&mut self.image, radius, intensity);
-    }
-
-    pub fn apply_solarize(&mut self) {
-        effects::solarize(&mut self.image);
-    }
-
-    pub fn apply_dither(&mut self, depth: u32) {
-        effects::dither(&mut self.image, depth);
-    }
-
-    pub fn apply_duotone(&mut self, r1: u8, g1: u8, b1: u8, r2: u8, g2: u8, b2: u8) {
-        effects::duotone(&mut self.image, photon_rs::Rgb::new(r1, g1, b1), photon_rs::Rgb::new(r2, g2, b2));
-    }
-
-    // 重置到原始图像
-    pub fn reset(&mut self) {
-        // 使用 open_image_from_bytes 重新从原始字节创建图像
-        // 注意: 这里需要从原始字节数组中重建图像，但 original_bytes 是加载时的完整图像数据
-        // 由于 PhotonImage 没有直接从字节数组克隆的方法，我们需要创建一个新的 ImageProcessor
-        if let Ok(new_image) = native::open_image_from_bytes(&self.original_bytes) {
-            self.image = new_image.clone();
-            self.original_image = new_image;
-        }
-    }
-
-    // 可调节参数的滤镜 - 直接调用 photon-rs 函数
-    pub fn apply_brightness(&mut self, level: i32) {
-        // brightness 范围: -255 到 255
-        let clamped_level = level.clamp(-255, 255) as i16;
-        effects::adjust_brightness(&mut self.image, clamped_level);
-    }
-
-    pub fn apply_contrast(&mut self, level: f32) {
-        // contrast 范围: -255 到 255 (JavaScript 端已转换)
-        let clamped_level = level.clamp(-255.0, 255.0);
-        effects::adjust_contrast(&mut self.image, clamped_level);
-    }
-
-    pub fn apply_saturation(&mut self, level: f32) {
-        // saturation 范围: -1 到 1 (JavaScript 端已转换)
-        let clamped_level = level.clamp(-1.0, 1.0);
-        
-        if clamped_level >= 0.0 {
-            colour_spaces::saturate_hsl(&mut self.image, clamped_level);
-        } else {
-            colour_spaces::desaturate_hsl(&mut self.image, -clamped_level);
-        }
-    }
-
-    pub fn apply_hue(&mut self, level: i32) {
-        // hue 范围: -360 到 360
-        let clamped_level = level.clamp(-360, 360);
-        colour_spaces::hsl(&mut self.image, "shift_hue", clamped_level as f32);
-    }
-
-    pub fn apply_lightness(&mut self, level: f32, color_space: &str) {
-        // lightness 范围: -1 到 1 (负值变暗，正值变亮)
-        let clamped_level = level.clamp(-1.0, 1.0);
-        
-        match color_space {
-            "hsl" => {
-                if clamped_level >= 0.0 {
-                    colour_spaces::lighten_hsl(&mut self.image, clamped_level);
-                } else {
-                    colour_spaces::darken_hsl(&mut self.image, -clamped_level);
-                }
-            }
-            "lch" => {
-                if clamped_level >= 0.0 {
-                    colour_spaces::lighten_lch(&mut self.image, clamped_level);
-                } else {
-                    colour_spaces::darken_lch(&mut self.image, -clamped_level);
-                }
-            }
-            "hsv" => {
-                if clamped_level >= 0.0 {
-                    colour_spaces::lighten_hsv(&mut self.image, clamped_level);
-                } else {
-                    colour_spaces::darken_hsv(&mut self.image, -clamped_level);
-                }
-            }
-            "hsluv" => {
-                if clamped_level >= 0.0 {
-                    colour_spaces::lighten_hsluv(&mut self.image, clamped_level);
-                } else {
-                    colour_spaces::darken_hsluv(&mut self.image, -clamped_level);
-                }
-            }
-            _ => {
-                // 默认使用 HSL
-                if clamped_level >= 0.0 {
-                    colour_spaces::lighten_hsl(&mut self.image, clamped_level);
-                } else {
-                    colour_spaces::darken_hsl(&mut self.image, -clamped_level);
-                }
-            }
-        }
-    }
-
-    pub fn apply_gamma(&mut self, red: f32, green: f32, blue: f32) {
-        // gamma 范围: 0.1 到 10.0，1.0 表示无变化
-        let clamped_red = red.clamp(0.1, 10.0);
-        let clamped_green = green.clamp(0.1, 10.0);
-        let clamped_blue = blue.clamp(0.1, 10.0);
-        colour_spaces::gamma_correction(&mut self.image, clamped_red, clamped_green, clamped_blue);
-    }
-
-    pub fn apply_sharpen(&mut self, strength: f32) {
-        // strength 范围: 0.0 到 10.0
-        let clamped_strength = strength.clamp(0.0, 10.0);
-        photon_rs::conv::sharpen_with_strength(&mut self.image, clamped_strength);
-    }
-
-    pub fn apply_noise_reduction(&mut self, strength: f32) {
-        // strength 范围: 0.0 到 10.0
-        let clamped_strength = strength.clamp(0.0, 10.0);
-        photon_rs::conv::noise_reduction_with_strength(&mut self.image, clamped_strength);
-    }
-
-    // 噪点效果
-    pub fn apply_noise(&mut self, strength: f32) {
-        // strength 范围: 0.0 到 10.0
-        let clamped_strength = strength.clamp(0.0, 10.0);
-        photon_rs::noise::add_noise_rand_with_strength(&mut self.image, clamped_strength);
-    }
-
-    // 彩色噪点效果（自定义 RGB 系数）
-    pub fn apply_color_noise_with_strength(&mut self, r_factor: f32, g_factor: f32, b_factor: f32, strength: f32) {
-        // RGB 系数范围: 0.0 到 1.0
-        let r_factor = r_factor.clamp(0.0, 1.0);
-        let g_factor = g_factor.clamp(0.0, 1.0);
-        let b_factor = b_factor.clamp(0.0, 1.0);
-        
-        // strength 范围: 0.0 到 10.0
-        let strength = strength.clamp(0.0, 10.0);
-        
-        // 计算最大偏移量
-        let max_offset = (15.0 * strength) as u8;
-        
-        // 如果强度为 0，不需要添加噪点
-        if max_offset == 0 {
-            return;
-        }
-        
-        // 使用 photon-rs 的 helpers 模块来处理图像
-        let mut img = photon_rs::helpers::dyn_image_from_raw(&self.image);
-        
-        // 获取图像尺寸
-        let width = img.width();
-        let height = img.height();
-        
-        // 手动遍历每个像素
-        for y in 0..height {
-            for x in 0..width {
-                let mut px = img.get_pixel(x, y);
-                let channels = px.channels();
-                
-                // 为每个通道生成随机偏移
-                let r_offset = (js_sys::Math::random() * max_offset as f64) as u8;
-                let g_offset = (js_sys::Math::random() * max_offset as f64) as u8;
-                let b_offset = (js_sys::Math::random() * max_offset as f64) as u8;
-                
-                // 应用 RGB 系数和偏移
-                let new_r = (channels[0] as f32 + r_offset as f32 * r_factor).min(255.0) as u8;
-                let new_g = (channels[1] as f32 + g_offset as f32 * g_factor).min(255.0) as u8;
-                let new_b = (channels[2] as f32 + b_offset as f32 * b_factor).min(255.0) as u8;
-                let new_a = channels[3];
-                
-                // 创建新的像素
-                let new_px = image::Rgba([new_r, new_g, new_b, new_a]);
-                img.put_pixel(x, y, new_px);
-            }
-        }
-        
-        // 更新图像数据
-        self.image = photon_rs::PhotonImage::new(img.into_bytes(), self.width, self.height);
-    }
-
-    // 粉色噪点效果
-    pub fn apply_pink_noise(&mut self) {
-        photon_rs::noise::pink_noise(&mut self.image);
-    }
-
-    // 批量应用多个调节（避免重复重置）
-    pub fn apply_all_adjustments(&mut self, brightness: i32, contrast: f32, saturation: f32, hue: i32, lightness: f32, lightness_color_space: &str, gamma_red: f32, gamma_green: f32, gamma_blue: f32, sharpen_strength: f32, noise_reduction_strength: f32) {
-        // 基于原始图像应用所有调整
-        let mut temp_img = self.original_image.clone();
-
-        // 亮度: 输入 -255 到 255
-        if brightness != 0 {
-            let clamped_brightness = brightness.clamp(-255, 255) as i16;
-            effects::adjust_brightness(&mut temp_img, clamped_brightness);
-        }
-
-        // 对比度: 输入 -255 到 255 (已经转换过)
-        if contrast != 0.0 {
-            let clamped_contrast = contrast.clamp(-255.0, 255.0);
-            effects::adjust_contrast(&mut temp_img, clamped_contrast);
-        }
-
-        // 饱和度: 输入 -1 到 1 (已经转换过)
-        if saturation != 0.0 {
-            let clamped_saturation = saturation.clamp(-1.0, 1.0);
-            if clamped_saturation >= 0.0 {
-                colour_spaces::saturate_hsl(&mut temp_img, clamped_saturation);
-            } else {
-                colour_spaces::desaturate_hsl(&mut temp_img, -clamped_saturation);
-            }
-        }
-
-        // 色相: 输入 -360 到 360
-        if hue != 0 {
-            let clamped_hue = hue.clamp(-360, 360);
-            colour_spaces::hsl(&mut temp_img, "shift_hue", clamped_hue as f32);
-        }
-
-        // 明度: 输入 -1 到 1
-        if lightness != 0.0 {
-            let clamped_lightness = lightness.clamp(-1.0, 1.0);
-            match lightness_color_space {
-                "hsl" => {
-                    if clamped_lightness >= 0.0 {
-                        colour_spaces::lighten_hsl(&mut temp_img, clamped_lightness);
-                    } else {
-                        colour_spaces::darken_hsl(&mut temp_img, -clamped_lightness);
-                    }
-                }
-                "lch" => {
-                    if clamped_lightness >= 0.0 {
-                        colour_spaces::lighten_lch(&mut temp_img, clamped_lightness);
-                    } else {
-                        colour_spaces::darken_lch(&mut temp_img, -clamped_lightness);
-                    }
-                }
-                "hsv" => {
-                    if clamped_lightness >= 0.0 {
-                        colour_spaces::lighten_hsv(&mut temp_img, clamped_lightness);
-                    } else {
-                        colour_spaces::darken_hsv(&mut temp_img, -clamped_lightness);
-                    }
-                }
-                "hsluv" => {
-                    if clamped_lightness >= 0.0 {
-                        colour_spaces::lighten_hsluv(&mut temp_img, clamped_lightness);
-                    } else {
-                        colour_spaces::darken_hsluv(&mut temp_img, -clamped_lightness);
-                    }
-                }
-                _ => {
-                    // 默认使用 HSL
-                    if clamped_lightness >= 0.0 {
-                        colour_spaces::lighten_hsl(&mut temp_img, clamped_lightness);
-                    } else {
-                        colour_spaces::darken_hsl(&mut temp_img, -clamped_lightness);
-                    }
-                }
-            }
-        }
-
-        // 伽马校正
-        if gamma_red != 1.0 || gamma_green != 1.0 || gamma_blue != 1.0 {
-            let clamped_red = gamma_red.clamp(0.1, 10.0);
-            let clamped_green = gamma_green.clamp(0.1, 10.0);
-            let clamped_blue = gamma_blue.clamp(0.1, 10.0);
-            colour_spaces::gamma_correction(&mut temp_img, clamped_red, clamped_green, clamped_blue);
-        }
-
-        // 锐化
-        if sharpen_strength != 0.0 {
-            let clamped_strength = sharpen_strength.clamp(0.0, 10.0);
-            photon_rs::conv::sharpen_with_strength(&mut temp_img, clamped_strength);
-        }
-
-        // 降噪
-        if noise_reduction_strength != 0.0 {
-            let clamped_strength = noise_reduction_strength.clamp(0.0, 10.0);
-            photon_rs::conv::noise_reduction_with_strength(&mut temp_img, clamped_strength);
-        }
-
-        self.image = temp_img;
-    }
-
-    // 变换操作
-    pub fn rotate_90(&mut self) {
-        self.image = transform::rotate(&self.image, 90.0);
-        self.width = self.image.get_width();
-        self.height = self.image.get_height();
-    }
-
-    /// 任意角度旋转
-    /// angle: 旋转角度（度），支持 -360 到 360
-    pub fn rotate_any(&mut self, angle: f32) {
-        // 对于 90 度倍数，使用快速路径
-        if angle.abs() % 90.0 < 0.01 {
-            let right_angle_count = ((angle.abs() as i32) / 90) % 4;
-            let is_negative = angle < 0.0;
-            
-            for _ in 0..right_angle_count {
-                if is_negative {
-                    // 逆时针旋转 = 顺时针旋转 270 度 = 3 次 90 度
-                    self.image = transform::rotate(&self.image, -90.0);
-                } else {
-                    self.image = transform::rotate(&self.image, 90.0);
-                }
-            }
-        } else {
-            // 对于任意角度，使用三次剪切变换
-            self.image = transform::rotate(&self.image, angle);
-        }
-        self.width = self.image.get_width();
-        self.height = self.image.get_height();
-    }
-
-    pub fn flip_horizontal(&mut self) {
-        transform::fliph(&mut self.image);
-    }
-
-    pub fn flip_vertical(&mut self) {
-        transform::flipv(&mut self.image);
-    }
-
-    pub fn crop(&mut self, x1: u32, y1: u32, x2: u32, y2: u32) {
-        self.image = transform::crop(&self.image, x1, y1, x2, y2);
-        self.width = self.image.get_width();
-        self.height = self.image.get_height();
-    }
-
-    pub fn resize(&mut self, new_width: u32, new_height: u32) {
-        self.image = transform::resize(&self.image, new_width, new_height, photon_rs::transform::SamplingFilter::Nearest);
-        self.width = self.image.get_width();
-        self.height = self.image.get_height();
-    }
-
-    // 单色效果
-    pub fn apply_b_grayscale(&mut self) {
-        monochrome::b_grayscale(&mut self.image);
-    }
-
-    pub fn apply_desaturate(&mut self) {
-        monochrome::desaturate(&mut self.image);
-    }
-
-    pub fn apply_decompose_max(&mut self) {
-        monochrome::decompose_max(&mut self.image);
-    }
-
-    pub fn apply_decompose_min(&mut self) {
-        monochrome::decompose_min(&mut self.image);
-    }
-
-    pub fn apply_grayscale_human_corrected(&mut self) {
-        monochrome::grayscale_human_corrected(&mut self.image);
-    }
-
-    pub fn apply_grayscale_shades(&mut self, num_shades: u8) {
-        monochrome::grayscale_shades(&mut self.image, num_shades);
-    }
-
-    // 模糊效果
-    pub fn apply_box_blur(&mut self) {
-        photon_rs::conv::box_blur(&mut self.image);
-    }
-
-    pub fn apply_gaussian_blur(&mut self, radius: i32) {
-        photon_rs::conv::gaussian_blur(&mut self.image, radius);
-    }
-
-    // 边缘检测
-    pub fn apply_sobel_horizontal(&mut self) {
-        photon_rs::conv::sobel_horizontal(&mut self.image);
-    }
-
-    pub fn apply_sobel_vertical(&mut self) {
-        photon_rs::conv::sobel_vertical(&mut self.image);
-    }
-
-    pub fn apply_sobel_global(&mut self) {
-        photon_rs::conv::edge_detection(&mut self.image);
-    }
-
-    pub fn apply_prewitt_horizontal(&mut self) {
-        photon_rs::conv::detect_horizontal_lines(&mut self.image);
-    }
-
-    // 卷积效果
-    pub fn apply_laplace(&mut self) {
-        photon_rs::conv::laplace(&mut self.image);
-    }
-
-    pub fn apply_emboss(&mut self) {
-        photon_rs::conv::emboss(&mut self.image);
-    }
-
-    pub fn apply_identity(&mut self) {
-        photon_rs::conv::identity(&mut self.image);
-    }
-
-    pub fn apply_edge_one(&mut self) {
-        photon_rs::conv::edge_one(&mut self.image);
-    }
-
-    pub fn apply_edge_detection(&mut self) {
-        photon_rs::conv::edge_detection(&mut self.image);
-    }
-
-    // 线条检测
-    pub fn apply_detect_horizontal_lines(&mut self) {
-        photon_rs::conv::detect_horizontal_lines(&mut self.image);
-    }
-
-    pub fn apply_detect_vertical_lines(&mut self) {
-        photon_rs::conv::detect_vertical_lines(&mut self.image);
-    }
-
-    pub fn apply_detect_45_deg_lines(&mut self) {
-        photon_rs::conv::detect_45_deg_lines(&mut self.image);
-    }
-
-    pub fn apply_detect_135_deg_lines(&mut self) {
-        photon_rs::conv::detect_135_deg_lines(&mut self.image);
-    }
-
-    // 特殊效果
-    pub fn apply_primary(&mut self) {
-        effects::primary(&mut self.image);
-    }
-
-    pub fn apply_colorize(&mut self) {
-        effects::colorize(&mut self.image);
-    }
-
-    pub fn apply_frosted_glass(&mut self) {
-        effects::frosted_glass(&mut self.image);
-    }
-
-    pub fn apply_tint(&mut self, r: u32, g: u32, b: u32) {
-        effects::tint(&mut self.image, r, g, b);
-    }
-
-    // 条纹效果
-    pub fn apply_horizontal_strips(&mut self, num_strips: u8) {
-        effects::horizontal_strips(&mut self.image, num_strips);
-    }
-
-    pub fn apply_vertical_strips(&mut self, num_strips: u8) {
-        effects::vertical_strips(&mut self.image, num_strips);
-    }
-
-    pub fn apply_color_horizontal_strips(&mut self, num_strips: u8, r: u8, g: u8, b: u8) {
-        effects::color_horizontal_strips(&mut self.image, num_strips, photon_rs::Rgb::new(r, g, b));
-    }
-
-    pub fn apply_color_vertical_strips(&mut self, num_strips: u8, r: u8, g: u8, b: u8) {
-        effects::color_vertical_strips(&mut self.image, num_strips, photon_rs::Rgb::new(r, g, b));
-    }
-
-    // 通道调整
-    pub fn offset_red(&mut self, offset_amt: u32) {
-        effects::offset_red(&mut self.image, offset_amt);
-    }
-
-    pub fn offset_green(&mut self, offset_amt: u32) {
-        effects::offset_green(&mut self.image, offset_amt);
-    }
-
-    pub fn offset_blue(&mut self, offset_amt: u32) {
-        effects::offset_blue(&mut self.image, offset_amt);
-    }
-
-    // 归一化
-    pub fn apply_normalize(&mut self) {
-        effects::normalize(&mut self.image);
-    }
-
-    // ==================== Channels（通道操作）====================
-
-    pub fn alter_red_channel(&mut self, amt: i16) {
-        photon_rs::channels::alter_red_channel(&mut self.image, amt);
-    }
-
-    pub fn alter_green_channel(&mut self, amt: i16) {
-        photon_rs::channels::alter_green_channel(&mut self.image, amt);
-    }
-
-    pub fn alter_blue_channel(&mut self, amt: i16) {
-        photon_rs::channels::alter_blue_channel(&mut self.image, amt);
-    }
-
-    pub fn remove_red_channel(&mut self) {
-        photon_rs::channels::remove_red_channel(&mut self.image, 0);
-    }
-
-    pub fn remove_green_channel(&mut self) {
-        photon_rs::channels::remove_green_channel(&mut self.image, 0);
-    }
-
-    pub fn remove_blue_channel(&mut self) {
-        photon_rs::channels::remove_blue_channel(&mut self.image, 0);
-    }
-
-    pub fn swap_rg_channels(&mut self) {
-        photon_rs::channels::swap_channels(&mut self.image, 0, 1);
-    }
-
-    pub fn swap_gb_channels(&mut self) {
-        photon_rs::channels::swap_channels(&mut self.image, 1, 2);
-    }
-
-    pub fn swap_rb_channels(&mut self) {
-        photon_rs::channels::swap_channels(&mut self.image, 0, 2);
-    }
-
-    // ==================== Colour Spaces（色彩空间）====================
-
-    pub fn hue_rotate_hsl(&mut self, degrees: f32) {
-        colour_spaces::hue_rotate_hsl(&mut self.image, degrees);
-    }
-
-    pub fn hue_rotate_hsv(&mut self, degrees: f32) {
-        colour_spaces::hue_rotate_hsv(&mut self.image, degrees);
-    }
-
-    pub fn hue_rotate_lch(&mut self, degrees: f32) {
-        colour_spaces::hue_rotate_lch(&mut self.image, degrees);
-    }
-
-    pub fn lighten_hsl(&mut self, level: f32) {
-        colour_spaces::lighten_hsl(&mut self.image, level);
-    }
-
-    pub fn darken_hsl(&mut self, level: f32) {
-        colour_spaces::darken_hsl(&mut self.image, level);
-    }
-
-    pub fn saturate_hsl(&mut self, level: f32) {
-        colour_spaces::saturate_hsl(&mut self.image, level);
-    }
-
-    pub fn desaturate_hsl(&mut self, level: f32) {
-        colour_spaces::desaturate_hsl(&mut self.image, level);
-    }
-
-    // ==================== Effects（特效）====================
 
     pub fn apply_lix(&mut self) {
-        filters::lix(&mut self.image);
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_lix();
+        self.image = processor.image;
     }
 
     pub fn apply_neue(&mut self) {
-        filters::neue(&mut self.image);
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_neue();
+        self.image = processor.image;
     }
 
     pub fn apply_ryo(&mut self) {
-        filters::ryo(&mut self.image);
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_ryo();
+        self.image = processor.image;
+    }
+
+    // ==================== 特殊效果 ====================
+
+    pub fn apply_pixelate(&mut self, pixel_size: i32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_pixelate(pixel_size);
+        self.image = processor.image;
+    }
+
+    pub fn apply_halftone(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_halftone();
+        self.image = processor.image;
+    }
+
+    pub fn apply_oil(&mut self, radius: i32, intensity: f64) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_oil(radius, intensity);
+        self.image = processor.image;
+    }
+
+    pub fn apply_solarize(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_solarize();
+        self.image = processor.image;
+    }
+
+    pub fn apply_dither(&mut self, depth: u32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_dither(depth);
+        self.image = processor.image;
+    }
+
+    pub fn apply_duotone(&mut self, r1: u8, g1: u8, b1: u8, r2: u8, g2: u8, b2: u8) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_duotone(r1, g1, b1, r2, g2, b2);
+        self.image = processor.image;
     }
 
     pub fn apply_inc_brightness(&mut self, brightness: u8) {
-        effects::inc_brightness(&mut self.image, brightness);
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_inc_brightness(brightness);
+        self.image = processor.image;
     }
 
     pub fn apply_gradient(&mut self) {
-        photon_rs::multiple::apply_gradient(&mut self.image);
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_gradient();
+        self.image = processor.image;
     }
 
-    // 水印功能
-    pub fn apply_watermark(&mut self, watermark_bytes: &[u8], x: i64, y: i64) {
-        let watermark = native::open_image_from_bytes(watermark_bytes)
-            .expect("Failed to open watermark image");
-        photon_rs::multiple::watermark(&mut self.image, &watermark, x, y);
+    pub fn apply_primary(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_primary();
+        self.image = processor.image;
     }
 
-    // 水印功能（带缩放）
-    pub fn apply_watermark_with_scale(&mut self, watermark_bytes: &[u8], x: i64, y: i64, scale: f32) {
-        let mut watermark = native::open_image_from_bytes(watermark_bytes)
-            .expect("Failed to open watermark image");
-        
-        // 如果缩放比例不为1.0，调整水印大小
-        if scale != 1.0 {
-            let new_width = (watermark.get_width() as f32 * scale) as u32;
-            let new_height = (watermark.get_height() as f32 * scale) as u32;
-            watermark = transform::resize(&watermark, new_width, new_height, transform::SamplingFilter::Lanczos3);
+    pub fn apply_colorize(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_colorize();
+        self.image = processor.image;
+    }
+
+    pub fn apply_frosted_glass(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_frosted_glass();
+        self.image = processor.image;
+    }
+
+    pub fn apply_tint(&mut self, r: u32, g: u32, b: u32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_tint(r, g, b);
+        self.image = processor.image;
+    }
+
+    pub fn apply_normalize(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_normalize();
+        self.image = processor.image;
+    }
+
+    pub fn offset_red(&mut self, offset_amt: u32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.offset_red(offset_amt);
+        self.image = processor.image;
+    }
+
+    pub fn offset_green(&mut self, offset_amt: u32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.offset_green(offset_amt);
+        self.image = processor.image;
+    }
+
+    pub fn offset_blue(&mut self, offset_amt: u32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.offset_blue(offset_amt);
+        self.image = processor.image;
+    }
+
+    pub fn apply_strips(
+        &mut self,
+        num_strips: u8,
+        horizontal: bool,
+        color_r: Option<u8>,
+        color_g: Option<u8>,
+        color_b: Option<u8>,
+    ) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_strips(num_strips, horizontal, color_r, color_g, color_b);
+        self.image = processor.image;
+    }
+
+    // ==================== 可调节参数的滤镜 ====================
+
+    pub fn apply_brightness(&mut self, level: i32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_brightness(level);
+        self.image = processor.image;
+    }
+
+    pub fn apply_contrast(&mut self, level: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_contrast(level);
+        self.image = processor.image;
+    }
+
+    pub fn apply_saturation(&mut self, level: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_saturation(level);
+        self.image = processor.image;
+    }
+
+    pub fn apply_hue(&mut self, level: i32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_hue(level);
+        self.image = processor.image;
+    }
+
+    pub fn apply_lightness(&mut self, level: f32, color_space: ColorSpace) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_lightness(level, color_space);
+        self.image = processor.image;
+    }
+
+    pub fn apply_gamma(&mut self, red: f32, green: f32, blue: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_gamma(red, green, blue);
+        self.image = processor.image;
+    }
+
+    pub fn apply_sharpen(&mut self, strength: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_sharpen(strength);
+        self.image = processor.image;
+    }
+
+    pub fn apply_noise_reduction(&mut self, strength: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_noise_reduction(strength);
+        self.image = processor.image;
+    }
+
+    pub fn apply_bilateral_filter(&mut self, sigma_spatial: f32, sigma_range: f32, fast_mode: bool) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_bilateral_filter(sigma_spatial, sigma_range, fast_mode);
+        self.image = processor.image;
+    }
+
+    // ==================== 噪点效果 ====================
+
+    pub fn apply_noise(&mut self, strength: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_noise(strength);
+        self.image = processor.image;
+    }
+
+    pub fn apply_color_noise_with_strength(&mut self, r_factor: f32, g_factor: f32, b_factor: f32, strength: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_color_noise_with_strength(r_factor, g_factor, b_factor, strength);
+        self.image = processor.image;
+    }
+
+    pub fn apply_pink_noise(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_pink_noise();
+        self.image = processor.image;
+    }
+
+    // ==================== 批量应用多个调节 ====================
+
+    pub fn apply_all_adjustments(
+        &mut self,
+        brightness: i32,
+        contrast: f32,
+        saturation: f32,
+        hue: i32,
+        lightness: f32,
+        lightness_color_space: ColorSpace,
+        gamma_red: f32,
+        gamma_green: f32,
+        gamma_blue: f32,
+        sharpen_strength: f32,
+        noise_reduction_strength: f32,
+    ) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_all_adjustments(
+            brightness, contrast, saturation, hue, lightness, lightness_color_space,
+            gamma_red, gamma_green, gamma_blue, sharpen_strength, noise_reduction_strength,
+        );
+        self.image = processor.image;
+    }
+
+    // ==================== 变换操作 ====================
+
+    pub fn rotate_90(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.rotate_90();
+        self.image = processor.image;
+        self.width = processor.width;
+        self.height = processor.height;
+    }
+
+    pub fn rotate_any(&mut self, angle: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.rotate_any(angle);
+        self.image = processor.image;
+        self.width = processor.width;
+        self.height = processor.height;
+    }
+
+    pub fn flip_horizontal(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.flip_horizontal();
+        self.image = processor.image;
+    }
+
+    pub fn flip_vertical(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.flip_vertical();
+        self.image = processor.image;
+    }
+
+    pub fn crop(&mut self, x1: u32, y1: u32, x2: u32, y2: u32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.crop(x1, y1, x2, y2);
+        self.image = processor.image;
+        self.width = processor.width;
+        self.height = processor.height;
+    }
+
+    pub fn resize(&mut self, new_width: u32, new_height: u32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.resize(new_width, new_height);
+        self.image = processor.image;
+        self.width = processor.width;
+        self.height = processor.height;
+    }
+
+    // ==================== 单色效果 ====================
+
+    pub fn apply_b_grayscale(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_b_grayscale();
+        self.image = processor.image;
+    }
+
+    pub fn apply_desaturate(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_desaturate();
+        self.image = processor.image;
+    }
+
+    pub fn apply_decompose_max(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_decompose_max();
+        self.image = processor.image;
+    }
+
+    pub fn apply_decompose_min(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_decompose_min();
+        self.image = processor.image;
+    }
+
+    pub fn apply_grayscale_human_corrected(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_grayscale_human_corrected();
+        self.image = processor.image;
+    }
+
+    pub fn apply_grayscale_shades(&mut self, num_shades: u8) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_grayscale_shades(num_shades);
+        self.image = processor.image;
+    }
+
+    // ==================== 模糊效果 ====================
+
+    pub fn apply_box_blur(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_box_blur();
+        self.image = processor.image;
+    }
+
+    pub fn apply_gaussian_blur(&mut self, radius: i32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_gaussian_blur(radius);
+        self.image = processor.image;
+    }
+
+    // ==================== 边缘检测 ====================
+
+    pub fn apply_sobel_horizontal(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_sobel_horizontal();
+        self.image = processor.image;
+    }
+
+    pub fn apply_sobel_vertical(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_sobel_vertical();
+        self.image = processor.image;
+    }
+
+    pub fn apply_sobel_global(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_sobel_global();
+        self.image = processor.image;
+    }
+
+    pub fn apply_prewitt_horizontal(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_prewitt_horizontal();
+        self.image = processor.image;
+    }
+
+    // ==================== 卷积效果 ====================
+
+    pub fn apply_laplace(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_laplace();
+        self.image = processor.image;
+    }
+
+    pub fn apply_emboss(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_emboss();
+        self.image = processor.image;
+    }
+
+    pub fn apply_identity(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_identity();
+        self.image = processor.image;
+    }
+
+    pub fn apply_edge_one(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_edge_one();
+        self.image = processor.image;
+    }
+
+    pub fn apply_edge_detection(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_edge_detection();
+        self.image = processor.image;
+    }
+
+    // ==================== 线条检测 ====================
+
+    pub fn apply_detect_horizontal_lines(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_detect_horizontal_lines();
+        self.image = processor.image;
+    }
+
+    pub fn apply_detect_vertical_lines(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_detect_vertical_lines();
+        self.image = processor.image;
+    }
+
+    pub fn apply_detect_45_deg_lines(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_detect_45_deg_lines();
+        self.image = processor.image;
+    }
+
+    pub fn apply_detect_135_deg_lines(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_detect_135_deg_lines();
+        self.image = processor.image;
+    }
+
+    // ==================== 通道操作 ====================
+
+    pub fn alter_red_channel(&mut self, amt: i16) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.alter_red_channel(amt);
+        self.image = processor.image;
+    }
+
+    pub fn alter_green_channel(&mut self, amt: i16) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.alter_green_channel(amt);
+        self.image = processor.image;
+    }
+
+    pub fn alter_blue_channel(&mut self, amt: i16) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.alter_blue_channel(amt);
+        self.image = processor.image;
+    }
+
+    pub fn remove_red_channel(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.remove_red_channel();
+        self.image = processor.image;
+    }
+
+    pub fn remove_green_channel(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.remove_green_channel();
+        self.image = processor.image;
+    }
+
+    pub fn remove_blue_channel(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.remove_blue_channel();
+        self.image = processor.image;
+    }
+
+    pub fn swap_rg_channels(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.swap_rg_channels();
+        self.image = processor.image;
+    }
+
+    pub fn swap_gb_channels(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.swap_gb_channels();
+        self.image = processor.image;
+    }
+
+    pub fn swap_rb_channels(&mut self) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.swap_rb_channels();
+        self.image = processor.image;
+    }
+
+    // ==================== 色彩空间 ====================
+
+    pub fn hue_rotate(&mut self, degrees: f32, color_space: u8) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.hue_rotate(degrees, color_space);
+        self.image = processor.image;
+    }
+
+    pub fn adjust_lightness(&mut self, level: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.adjust_lightness(level);
+        self.image = processor.image;
+    }
+
+    pub fn adjust_saturation(&mut self, level: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.adjust_saturation(level);
+        self.image = processor.image;
+    }
+
+    pub fn hue_rotate_hsl(&mut self, degrees: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.hue_rotate_hsl(degrees);
+        self.image = processor.image;
+    }
+
+    pub fn lighten_hsl(&mut self, level: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.lighten_hsl(level);
+        self.image = processor.image;
+    }
+
+    pub fn darken_hsl(&mut self, level: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.darken_hsl(level);
+        self.image = processor.image;
+    }
+
+    pub fn saturate_hsl(&mut self, level: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.saturate_hsl(level);
+        self.image = processor.image;
+    }
+
+    pub fn desaturate_hsl(&mut self, level: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.desaturate_hsl(level);
+        self.image = processor.image;
+    }
+
+    // ==================== 水印功能 ====================
+
+    pub fn apply_watermark(
+        &mut self,
+        watermark_bytes: &[u8],
+        x: i64,
+        y: i64,
+        scale: Option<f32>,
+        opacity: Option<f32>,
+        rotation: Option<f32>,
+    ) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_watermark(watermark_bytes, x, y, scale, opacity, rotation);
+        self.image = processor.image;
+    }
+
+    pub fn apply_watermark_with_blend(
+        &mut self,
+        watermark_bytes: &[u8],
+        x: i64,
+        y: i64,
+        scale: f32,
+        blend_mode: &str,
+    ) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_watermark_with_blend(watermark_bytes, x, y, scale, blend_mode);
+        self.image = processor.image;
+    }
+
+    // ==================== 多图混合功能 ====================
+
+    pub fn blend_images(
+        &mut self,
+        overlay_bytes: &[u8],
+        blend_mode: &str,
+        scale: Option<f32>,
+    ) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.blend_images(overlay_bytes, blend_mode, scale);
+        self.image = processor.image;
+    }
+
+    pub fn blend_images_with_scale(
+        &mut self,
+        overlay_bytes: &[u8],
+        scale: f32,
+        blend_mode: &str,
+    ) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.blend_images_with_scale(overlay_bytes, scale, blend_mode);
+        self.image = processor.image;
+    }
+
+    // ==================== 边缘优化功能 ====================
+
+    pub fn apply_polygon_mask(
+        &mut self,
+        vertices: Vec<f32>,
+        anti_aliased: bool,
+        smooth_edges: bool,
+        smoothing_radius: u32,
+    ) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_polygon_mask(vertices, anti_aliased, smooth_edges, smoothing_radius);
+        self.image = processor.image;
+    }
+
+    pub fn apply_circular_mask(
+        &mut self,
+        center_x: f32,
+        center_y: f32,
+        radius: f32,
+        feather_radius: f32,
+    ) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_circular_mask(center_x, center_y, radius, feather_radius);
+        self.image = processor.image;
+    }
+
+    pub fn auto_crop_by_color(
+        &mut self,
+        target_r: u8,
+        target_g: u8,
+        target_b: u8,
+        tolerance: u8,
+        feather_radius: f32,
+    ) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.auto_crop_by_color(target_r, target_g, target_b, tolerance, feather_radius);
+        self.image = processor.image;
+    }
+
+    pub fn refine_edges(&mut self, smoothing_radius: u32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.refine_edges(smoothing_radius);
+        self.image = processor.image;
+    }
+
+    pub fn smart_crop(&mut self, threshold: u8, feather_radius: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.smart_crop(threshold, feather_radius);
+        self.image = processor.image;
+    }
+
+    // ==================== 笔刷功能 ====================
+
+    /// 开始一笔新画
+    pub fn begin_stroke(&mut self, config: BrushConfig) {
+        self.current_stroke = Some(BrushStroke::new(config));
+    }
+
+    /// 添加点到当前笔划
+    pub fn add_stroke_point(&mut self, x: f32, y: f32, pressure: f32) {
+        if let Some(ref mut stroke) = self.current_stroke {
+            let timestamp = js_sys::Date::now() as u64;
+            let point = StrokePoint::new(x, y, pressure, timestamp);
+            stroke.add_point(point);
+            stroke.invalidate_path_cache();
         }
-        
-        photon_rs::multiple::watermark(&mut self.image, &watermark, x, y);
     }
 
-    // 水印功能（带混合模式）
-    pub fn apply_watermark_with_blend(&mut self, watermark_bytes: &[u8], x: i64, y: i64, scale: f32, blend_mode: &str) {
-        let mut watermark = native::open_image_from_bytes(watermark_bytes)
-            .expect("Failed to open watermark image");
-        
-        // 调整水印大小以适应主图像（blend 函数要求水印必须小于主图像）
-        let mut final_watermark = if watermark.get_width() > self.width || watermark.get_height() > self.height {
-            // 计算缩放比例，确保水印不超过主图像
-            let max_scale = (self.width as f32 / watermark.get_width() as f32)
-                .min(self.height as f32 / watermark.get_height() as f32);
-            let actual_scale = scale.min(max_scale);
-            let new_width = (watermark.get_width() as f32 * actual_scale) as u32;
-            let new_height = (watermark.get_height() as f32 * actual_scale) as u32;
-            transform::resize(&watermark, new_width, new_height, transform::SamplingFilter::Lanczos3)
-        } else {
-            // 如果水印小于主图像，根据 scale 参数调整大小
-            if scale != 1.0 {
-                let new_width = (watermark.get_width() as f32 * scale) as u32;
-                let new_height = (watermark.get_height() as f32 * scale) as u32;
-                transform::resize(&watermark, new_width, new_height, transform::SamplingFilter::Lanczos3)
-            } else {
-                watermark
+    /// 结束当前笔划并渲染
+    pub fn end_stroke(&mut self) {
+        if let Some(mut stroke) = self.current_stroke.take() {
+            if stroke.get_points_count() < 2 {
+                return;
             }
-        };
-        
-        // 创建一个临时图像，用于将水印放置在指定位置
-        let mut temp_image = self.image.clone();
-        
-        // 将水印叠加到指定位置
-        photon_rs::multiple::watermark(&mut temp_image, &final_watermark, x, y);
-        
-        // 使用混合模式将两个图像混合
-        photon_rs::multiple::blend(&mut self.image, &temp_image, blend_mode);
-    }
 
-    // 水印功能（完整版：支持混合模式、透明度、旋转）
-    pub fn apply_watermark_advanced(&mut self, watermark_bytes: &[u8], x: i64, y: i64, scale: f32, _blend_mode: &str, opacity: f32, rotation: f32) {
-        let watermark = native::open_image_from_bytes(watermark_bytes)
-            .expect("Failed to open watermark image");
-        
-        // 1. 应用旋转（如果需要）
-        let rotated_watermark = if rotation.abs() > 0.1 {
-            transform::rotate(&watermark, rotation)
-        } else {
-            watermark
-        };
-        
-        // 2. 应用透明度（调整 alpha 通道）
-        let final_watermark = if opacity < 0.9 {
-            let pixels = rotated_watermark.get_bytes();
-            let width = rotated_watermark.get_width();
-            let height = rotated_watermark.get_height();
-            
-            // 安全检查
-            if pixels.len() == 0 || width == 0 || height == 0 {
-                rotated_watermark
+            if stroke.cached_path.is_none() {
+                let generator = StrokeGenerator::new(stroke.config);
+                stroke.cached_path = generator.generate_path(stroke.get_points_ref());
+            }
+
+            if let Err(e) = BrushRenderer::render_stroke(&mut self.image, &stroke) {
+                web_sys::console::error_1(&format!("Failed to render stroke: {}", e).into());
             } else {
-                let mut result = Vec::with_capacity(pixels.len());
-                let opacity_safe = opacity.max(0.01).min(1.0);
-                
-                let pixel_count = (pixels.len() / 4) as usize;
-                for i in 0..pixel_count {
-                    let idx = i * 4;
-                    if idx + 3 < pixels.len() {
-                        result.push(pixels[idx]);
-                        result.push(pixels[idx + 1]);
-                        result.push(pixels[idx + 2]);
-                        let new_alpha = ((pixels[idx + 3] as f32) * opacity_safe) as u8;
-                        result.push(new_alpha);
-                    }
+                self.strokes_history.push_back(stroke);
+
+                if self.strokes_history.len() > self.max_history_size {
+                    self.strokes_history.pop_front();
                 }
-                PhotonImage::new(result, width, height)
             }
-        } else {
-            rotated_watermark
-        };
-        
-        // 3. 调整水印大小以适应主图像
-        let final_watermark = if final_watermark.get_width() > self.width || final_watermark.get_height() > self.height {
-            let max_scale = (self.width as f32 / final_watermark.get_width() as f32)
-                .min(self.height as f32 / final_watermark.get_height() as f32);
-            let actual_scale = scale.min(max_scale);
-            let new_width = (final_watermark.get_width() as f32 * actual_scale) as u32;
-            let new_height = (final_watermark.get_height() as f32 * actual_scale) as u32;
-            transform::resize(&final_watermark, new_width, new_height, transform::SamplingFilter::Lanczos3)
-        } else {
-            if scale.abs() > 1.05 || scale.abs() < 0.95 {
-                let new_width = (final_watermark.get_width() as f32 * scale) as u32;
-                let new_height = (final_watermark.get_height() as f32 * scale) as u32;
-                transform::resize(&final_watermark, new_width, new_height, transform::SamplingFilter::Lanczos3)
-            } else {
-                final_watermark
-            }
-        };
-        
-        // 4. 应用水印 - 从字节数据重建图像避免循环引用
-        let main_bytes = self.image.get_bytes();
-        let main_width = self.image.get_width();
-        let main_height = self.image.get_height();
-        
-        // 安全检查
-        if main_bytes.len() == 0 || main_width == 0 || main_height == 0 {
+        }
+    }
+
+    /// 绘制一笔（高性能版本，使用 Float32Array）
+    #[wasm_bindgen]
+    pub fn draw_stroke_array(
+        &mut self,
+        points_array: js_sys::Float32Array,
+        r: u8,
+        g: u8,
+        b: u8,
+        a: u8,
+        width: f32,
+    ) {
+        let len = points_array.length() as usize;
+        if len < 2 || len % 2 != 0 {
             return;
         }
-        
-        let mut temp_image = PhotonImage::new(main_bytes, main_width, main_height);
-        photon_rs::multiple::watermark(&mut temp_image, &final_watermark, x, y);
-        
-        // 完全重建 self.image
-        let result_bytes = temp_image.get_bytes();
-        self.image = PhotonImage::new(result_bytes, temp_image.get_width(), temp_image.get_height());
+
+        let mut points = Vec::with_capacity(len / 2);
+        let timestamp = js_sys::Date::now() as u64;
+
+        for i in (0..len).step_by(2) {
+            let x = points_array.get_index(i as u32);
+            let y = points_array.get_index(i as u32 + 1);
+            points.push(StrokePoint::new(x, y, 1.0, timestamp));
+        }
+
+        if points.is_empty() {
+            return;
+        }
+
+        let config = BrushConfig {
+            brush_type: BrushType::Basic,
+            base_width: width,
+            color_r: r,
+            color_g: g,
+            color_b: b,
+            color_a: a,
+            blend_mode: BlendMode::Normal,
+            smoothness: 0.5,
+            pressure_sensitivity: 0.5,
+        };
+
+        let mut stroke = BrushStroke::new(config);
+        *stroke.get_points_mut() = points;
+
+        if stroke.cached_path.is_none() {
+            let generator = StrokeGenerator::new(stroke.config);
+            stroke.cached_path = generator.generate_path(stroke.get_points_ref());
+        }
+
+        if let Err(e) = BrushRenderer::render_stroke(&mut self.image, &stroke) {
+            web_sys::console::error_1(&format!("Failed to render stroke: {}", e).into());
+        } else {
+            self.strokes_history.push_back(stroke);
+
+            if self.strokes_history.len() > self.max_history_size {
+                self.strokes_history.pop_front();
+            }
+        }
     }
+
+    /// 直接绘制一笔（简化接口，向后兼容）
+    pub fn draw_stroke(
+        &mut self,
+        points_js: JsValue,
+        r: u8,
+        g: u8,
+        b: u8,
+        a: u8,
+        width: f32,
+    ) {
+        let points = if points_js.is_instance_of::<js_sys::Float32Array>() {
+            let float_array = js_sys::Float32Array::from(points_js);
+            let len = float_array.length() as usize;
+            if len < 2 || len % 2 != 0 {
+                return;
+            }
+
+            let mut result = Vec::with_capacity(len / 2);
+            let timestamp = js_sys::Date::now() as u64;
+
+            for i in (0..len).step_by(2) {
+                let x = float_array.get_index(i as u32);
+                let y = float_array.get_index(i as u32 + 1);
+                result.push(StrokePoint::new(x, y, 1.0, timestamp));
+            }
+            result
+        } else if points_js.is_instance_of::<js_sys::Array>() {
+            let array: js_sys::Array = points_js.into();
+            let mut result = Vec::with_capacity(array.length() as usize);
+            let timestamp = js_sys::Date::now() as u64;
+
+            for i in 0..array.length() {
+                let point_obj = array.get(i);
+                if let Some(obj) = point_obj.dyn_ref::<js_sys::Object>() {
+                    let x_val = js_sys::Reflect::get(obj, &"x".into()).unwrap();
+                    let y_val = js_sys::Reflect::get(obj, &"y".into()).unwrap();
+                    let x = x_val.as_f64().unwrap() as f32;
+                    let y = y_val.as_f64().unwrap() as f32;
+
+                    result.push(StrokePoint::new(x, y, 1.0, timestamp));
+                }
+            }
+            result
+        } else {
+            return;
+        };
+
+        if points.is_empty() {
+            return;
+        }
+
+        let config = BrushConfig {
+            brush_type: BrushType::Basic,
+            base_width: width,
+            color_r: r,
+            color_g: g,
+            color_b: b,
+            color_a: a,
+            blend_mode: BlendMode::Normal,
+            smoothness: 0.5,
+            pressure_sensitivity: 0.5,
+        };
+
+        let mut stroke = BrushStroke::new(config);
+        *stroke.get_points_mut() = points;
+
+        if stroke.cached_path.is_none() {
+            let generator = StrokeGenerator::new(stroke.config);
+            stroke.cached_path = generator.generate_path(stroke.get_points_ref());
+        }
+
+        if let Err(e) = BrushRenderer::render_stroke(&mut self.image, &stroke) {
+            web_sys::console::error_1(&format!("Failed to render stroke: {}", e).into());
+        } else {
+            self.strokes_history.push_back(stroke);
+
+            if self.strokes_history.len() > self.max_history_size {
+                self.strokes_history.pop_front();
+            }
+        }
+    }
+
+    /// 撤销最后一笔
+    pub fn undo_stroke(&mut self) -> bool {
+        if self.strokes_history.pop_back().is_some() {
+            if let Ok(new_image) = photon_rs::native::open_image_from_bytes(&self.original_bytes) {
+                self.image = new_image;
+
+                for stroke in &self.strokes_history {
+                    let _ = BrushRenderer::render_stroke(&mut self.image, stroke);
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+
+    /// 清除所有笔划
+    pub fn clear_strokes(&mut self) {
+        self.strokes_history.clear();
+        if let Ok(new_image) = photon_rs::native::open_image_from_bytes(&self.original_bytes) {
+            self.original_image = new_image.clone();
+            self.image = new_image;
+        }
+    }
+
+    /// 获取历史笔划数量
+    pub fn get_stroke_count(&self) -> usize {
+        self.strokes_history.len()
+    }
+
+    // ==================== 取色器API ====================
+
+    /// 获取指定坐标的像素颜色
+    ///
+    /// # 参数
+    /// * `x` - X 坐标 (0 到 width-1)
+    /// * `y` - Y 坐标 (0 到 height-1)
+    ///
+    /// # 返回值
+    /// 返回包含 RGBA 值的 JsValue (Uint8Array)，如果坐标超出范围则返回 null
+    pub fn get_pixel_color(&self, x: u32, y: u32) -> JsValue {
+        if let Some(color) = photon_rs::PhotonImage::get_pixel_color(&self.image, x, y) {
+            let rgba = vec![color.r, color.g, color.b, color.a];
+            unsafe { JsValue::from(js_sys::Uint8Array::from(rgba.as_slice())) }
+        } else {
+            JsValue::null()
+        }
+    }
+
+    /// 获取指定坐标的像素颜色的十六进制表示
+    ///
+    /// # 参数
+    /// * `x` - X 坐标 (0 到 width-1)
+    /// * `y` - Y 坐标 (0 到 height-1)
+    /// * `include_alpha` - 是否包含 alpha 通道
+    ///
+    /// # 返回值
+    /// 返回十六进制颜色字符串，如果坐标超出范围则返回 null
+    pub fn get_pixel_color_hex(&self, x: u32, y: u32, include_alpha: bool) -> Option<String> {
+        self.image.get_pixel_color_hex(x, y, include_alpha)
+    }
+
+    /// 获取指定坐标的像素亮度
+    ///
+    /// # 参数
+    /// * `x` - X 坐标 (0 到 width-1)
+    /// * `y` - Y 坐标 (0 到 height-1)
+    ///
+    /// # 返回值
+    /// 返回亮度值 (0-255)，如果坐标超出范围则返回 null
+    pub fn get_pixel_brightness(&self, x: u32, y: u32) -> Option<u8> {
+        self.image.get_pixel_brightness(x, y)
+    }
+
+    /// 获取指定区域的平均颜色
+    ///
+    /// # 参数
+    /// * `x` - 区域左上角 X 坐标
+    /// * `y` - 区域左上角 Y 坐标
+    /// * `width` - 区域宽度
+    /// * `height` - 区域高度
+    ///
+    /// # 返回值
+    /// 返回包含 RGBA 平均值的 JsValue (Uint8Array)，如果区域超出范围则返回 null
+    pub fn get_region_average_color(&self, x: u32, y: u32, width: u32, height: u32) -> JsValue {
+        if let Some(color) = self.image.get_region_average_color(x, y, width, height) {
+            let rgba = vec![color.r, color.g, color.b, color.a];
+            unsafe { JsValue::from(js_sys::Uint8Array::from(rgba.as_slice())) }
+        } else {
+            JsValue::null()
+        }
+    }
+
+    /// 获取指定区域的平均亮度
+    ///
+    /// # 参数
+    /// * `x` - 区域左上角 X 坐标
+    /// * `y` - 区域左上角 Y 坐标
+    /// * `width` - 区域宽度
+    /// * `height` - 区域高度
+    ///
+    /// # 返回值
+    /// 返回平均亮度值 (0-255)，如果区域超出范围则返回 null
+    pub fn get_region_average_brightness(&self, x: u32, y: u32, width: u32, height: u32) -> Option<u8> {
+        self.image.get_region_average_brightness(x, y, width, height)
+    }
+
+    /// 获取整个图像的主色调
+    ///
+    /// # 返回值
+    /// 返回包含 RGBA 值的 JsValue (Uint8Array)
+    pub fn get_dominant_color(&self) -> JsValue {
+        let color = self.image.get_dominant_color();
+        let rgba = vec![color.r, color.g, color.b, color.a];
+        unsafe { JsValue::from(js_sys::Uint8Array::from(rgba.as_slice())) }
+    }
+
+    /// 获取指定区域的主色调
+    ///
+    /// # 参数
+    /// * `x` - 区域左上角 X 坐标
+    /// * `y` - 区域左上角 Y 坐标
+    /// * `width` - 区域宽度
+    /// * `height` - 区域高度
+    ///
+    /// # 返回值
+    /// 返回包含 RGBA 值的 JsValue (Uint8Array)，如果区域超出范围则返回 null
+    pub fn get_region_dominant_color(&self, x: u32, y: u32, width: u32, height: u32) -> JsValue {
+        if let Some(color) = self.image.get_region_dominant_color(x, y, width, height) {
+            let rgba = vec![color.r, color.g, color.b, color.a];
+            unsafe { JsValue::from(js_sys::Uint8Array::from(rgba.as_slice())) }
+        } else {
+            JsValue::null()
+        }
+    }
+
+    /// 获取图像的调色板
+    ///
+    /// # 参数
+    /// * `num_colors` - 要提取的颜色数量
+    ///
+    /// # 返回值
+    /// 返回包含颜色数组的 JsValue (Array<Uint8Array>)，每个颜色是 [r, g, b, a] 格式
+    pub fn get_color_palette(&self, num_colors: usize) -> JsValue {
+        let palette = self.image.get_color_palette(num_colors);
+        let array = js_sys::Array::new();
+        for color in palette {
+            let rgba = vec![color.r, color.g, color.b, color.a];
+            let uint8_array = js_sys::Uint8Array::from(rgba.as_slice());
+            array.push(&uint8_array.into());
+        }
+        array.into()
+    }
+}
+
+// ==================== 字体注册功能（重新导出 photon_rs 的函数）====================
+
+pub use photon_rs::text::{
+    wasm_register_font,
+    wasm_is_font_registered,
+    wasm_get_registered_fonts,
+    wasm_unregister_font,
+    wasm_clear_fonts,
+    get_default_font_name,
+    is_default_font_initialized,
+};
+
+// ==================== 线程池初始化 =====================
+
+#[cfg(feature = "wasm-bindgen-rayon")]
+#[wasm_bindgen]
+pub async fn init_thread_pool(num_threads: usize) -> Result<(), JsValue> {
+    use wasm_bindgen_rayon::init_thread_pool;
+    use wasm_bindgen_futures::JsFuture;
+
+    let threads = if num_threads == 0 { 4 } else { num_threads };
+    let promise = init_thread_pool(threads);
+
+    JsFuture::from(promise).await.map(|_| ()).map_err(|e| e.unchecked_into())
 }
 
 #[wasm_bindgen(start)]
