@@ -2,6 +2,7 @@ mod types;
 mod brush;
 mod edge_refinement;
 mod image_operations;
+mod layers;
 
 use wasm_bindgen::prelude::*;
 use std::collections::VecDeque;
@@ -20,6 +21,10 @@ pub use edge_refinement::{
     refine_mask_edges,
     auto_crop_by_color,
 };
+
+// ==================== 重新导出图层模块 ====================
+
+pub use layers::{Layer, LayerStack};
 
 // ==================== 图像处理器 ====================
 
@@ -1880,3 +1885,8 @@ pub fn init() {
     #[cfg(debug_assertions)]
     console_error_panic_hook::set_once();
 }
+
+// ==================== 测试模块 ====================
+
+#[cfg(test)]
+mod layers_test;

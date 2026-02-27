@@ -15,6 +15,18 @@ export enum BlendMode {
     Exclusion = 7,
     Lighten = 8,
     Darken = 9,
+    ColorDodge = 10,
+    ColorBurn = 11,
+    LinearDodge = 12,
+    LinearBurn = 13,
+    VividLight = 14,
+    LinearLight = 15,
+    PinLight = 16,
+    HardMix = 17,
+    Hue = 18,
+    Saturation = 19,
+    Color = 20,
+    Luminosity = 21,
 }
 
 /**
@@ -398,6 +410,308 @@ export class ImageProcessor {
      * 撤销最后一笔
      */
     undo_stroke(): boolean;
+}
+
+/**
+ * 图层结构体
+ * 包含图像数据、变换、混合模式等属性
+ */
+export class Layer {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * 清除外部变换中心，恢复使用origin
+     */
+    clear_transform_center(): void;
+    /**
+     * 获取图层的像素数据
+     */
+    get_pixels(): Uint8Array;
+    /**
+     * 重置所有变换为默认值
+     */
+    reset_transform(): void;
+    /**
+     * 设置变换原点
+     */
+    set_origin(origin_x: number, origin_y: number): void;
+    /**
+     * 设置图层的像素数据
+     */
+    set_pixels(pixels: Uint8Array): void;
+    /**
+     * 设置位置
+     */
+    set_position(x: number, y: number): void;
+    /**
+     * 设置缩放（均匀缩放）
+     */
+    set_scale(scale: number): void;
+    /**
+     * 设置外部变换中心（画布坐标系）
+     */
+    set_transform_center(center_x?: number | null, center_y?: number | null): void;
+    /**
+     * 获取混合模式
+     */
+    blend_mode: BlendMode;
+    /**
+     * 获取水平翻转状态
+     */
+    flipHorizontal: boolean;
+    /**
+     * 获取垂直翻转状态
+     */
+    flipVertical: boolean;
+    /**
+     * 获取图层高度
+     */
+    readonly height: number;
+    /**
+     * 获取图层 ID
+     */
+    readonly id: number;
+    /**
+     * 获取锁定状态
+     */
+    locked: boolean;
+    /**
+     * 获取图层名称
+     */
+    name: string;
+    /**
+     * 获取不透明度 (0-255)
+     */
+    opacity: number;
+    /**
+     * 获取变换原点 X（0-1，相对于图层中心）
+     */
+    originX: number;
+    /**
+     * 获取变换原点 Y（0-1，相对于图层中心）
+     */
+    originY: number;
+    /**
+     * 获取位置 X
+     */
+    positionX: number;
+    /**
+     * 获取位置 Y
+     */
+    positionY: number;
+    /**
+     * 获取旋转角度（度）
+     */
+    rotation: number;
+    /**
+     * 获取缩放 X
+     */
+    scaleX: number;
+    /**
+     * 获取缩放 Y
+     */
+    scaleY: number;
+    /**
+     * 获取外部变换中心 X（画布坐标系）
+     */
+    get transformCenterX(): number | undefined;
+    /**
+     * 设置外部变换中心 X
+     */
+    set transformCenterX(value: number | null | undefined);
+    /**
+     * 获取外部变换中心 Y（画布坐标系）
+     */
+    get transformCenterY(): number | undefined;
+    /**
+     * 设置外部变换中心 Y
+     */
+    set transformCenterY(value: number | null | undefined);
+    /**
+     * 获取可见性
+     */
+    visible: boolean;
+    /**
+     * 获取图层宽度
+     */
+    readonly width: number;
+}
+
+/**
+ * 图层堆栈
+ * 管理多个图层及其合成顺序
+ */
+export class LayerStack {
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * 添加新图层
+     */
+    add_layer(name?: string | null): number;
+    /**
+     * 从图像数据添加图层
+     */
+    add_layer_from_pixels(pixels: Uint8Array, name?: string | null): number;
+    /**
+     * 对齐多个图层到指定图层
+     */
+    align_layers_to_layer(target_ids: Uint32Array, reference_id: number): boolean;
+    /**
+     * 批量将图层移动到画布中心
+     */
+    batch_center_layers(layer_ids: Uint32Array): number;
+    /**
+     * 批量设置多个图层的位置（相对偏移）
+     */
+    batch_move_layers(layer_ids: Uint32Array, delta_x: number, delta_y: number): number;
+    /**
+     * 批量设置多个图层的旋转
+     */
+    batch_set_rotation(layer_ids: Uint32Array, degrees: number): number;
+    /**
+     * 批量设置多个图层的缩放
+     */
+    batch_set_scale(layer_ids: Uint32Array, scale_x: number, scale_y: number): number;
+    /**
+     * 批量设置多个图层的缩放（均匀缩放）
+     */
+    batch_set_scale_uniform(layer_ids: Uint32Array, scale: number): number;
+    /**
+     * 将图层移动到画布中心
+     */
+    center_layer(id: number): boolean;
+    /**
+     * 清空所有图层
+     */
+    clear_all(): void;
+    /**
+     * 复制图层
+     */
+    duplicate_layer(id: number): number | undefined;
+    /**
+     * 合并所有可见图层
+     */
+    flatten(): boolean;
+    /**
+     * 通过 ID 获取图层
+     */
+    get_layer(id: number): Layer | undefined;
+    /**
+     * 获取图层的实际边界框（考虑变换后的位置）
+     */
+    get_layer_bounds(id: number): Float32Array | undefined;
+    /**
+     * 通过索引获取图层（索引 0 为最底层）
+     */
+    get_layer_by_index(index: number): Layer | undefined;
+    /**
+     * 获取所有图层 ID 列表
+     */
+    get_layer_ids(): Uint32Array;
+    /**
+     * 获取所有图层名称列表
+     */
+    get_layer_names(): string[];
+    /**
+     * 获取所有图层不透明度列表
+     */
+    get_layer_opacities(): Uint8Array;
+    /**
+     * 获取图层的变换信息（用于调试）
+     */
+    get_layer_transform_info(id: number): string | undefined;
+    /**
+     * 获取所有图层可见性列表 (0 = 不可见, 1 = 可见)
+     */
+    get_layer_visibility(): Uint8Array;
+    /**
+     * 向下合并图层
+     * 将指定图层与其下方的图层合并
+     */
+    merge_down(index: number): boolean;
+    /**
+     * 移动图层
+     * from_index: 原始索引
+     * to_index: 目标索引
+     */
+    move_layer(from_index: number, to_index: number): boolean;
+    /**
+     * 创建新的图层堆栈（JavaScript 调用）
+     */
+    constructor(width: number, height: number);
+    /**
+     * 删除图层
+     */
+    remove_layer(id: number): boolean;
+    /**
+     * 通过索引删除图层
+     */
+    remove_layer_by_index(index: number): boolean;
+    /**
+     * 合成所有图层，生成最终图像
+     */
+    render_composite(): PhotonImage;
+    /**
+     * 设置背景颜色
+     */
+    set_background_color(r: number, g: number, b: number, a: number): void;
+    /**
+     * 设置图层混合模式
+     */
+    set_layer_blend_mode(id: number, blend_mode: BlendMode): boolean;
+    /**
+     * 设置图层翻转
+     */
+    set_layer_flip(id: number, horizontal: boolean, vertical: boolean): boolean;
+    /**
+     * 设置图层不透明度
+     */
+    set_layer_opacity(id: number, opacity: number): boolean;
+    /**
+     * 设置图层位置
+     */
+    set_layer_position(id: number, x: number, y: number): boolean;
+    /**
+     * 设置图层旋转
+     */
+    set_layer_rotation(id: number, degrees: number): boolean;
+    /**
+     * 设置图层缩放
+     */
+    set_layer_scale(id: number, scale_x: number, scale_y: number): boolean;
+    /**
+     * 设置图层可见性
+     */
+    set_layer_visible(id: number, visible: boolean): boolean;
+    /**
+     * 以画布指定点为变换中心
+     * target_id: 要变换的图层ID
+     * center_x, center_y: 画布坐标系中的变换中心点
+     */
+    set_transform_center_on_canvas(target_id: number, center_x: number, center_y: number): boolean;
+    /**
+     * 以指定图层中心为参照点进行变换
+     * target_id: 要变换的图层ID
+     * reference_id: 参照图层ID（None表示使用画布中心）
+     */
+    set_transform_reference_layer(target_id: number, reference_id?: number | null): boolean;
+    /**
+     * 获取背景颜色
+     */
+    readonly background_color: Uint8Array;
+    /**
+     * 获取画布高度
+     */
+    readonly canvas_height: number;
+    /**
+     * 获取画布宽度
+     */
+    readonly canvas_width: number;
+    /**
+     * 获取图层数量
+     */
+    readonly layer_count: number;
 }
 
 /**
@@ -4524,6 +4838,8 @@ export interface InitOutput {
     readonly __wbg_get_strokepoint_x: (a: number) => number;
     readonly __wbg_get_strokepoint_y: (a: number) => number;
     readonly __wbg_imageprocessor_free: (a: number, b: number) => void;
+    readonly __wbg_layer_free: (a: number, b: number) => void;
+    readonly __wbg_layerstack_free: (a: number, b: number) => void;
     readonly __wbg_set_brushconfig_base_width: (a: number, b: number) => void;
     readonly __wbg_set_brushconfig_blend_mode: (a: number, b: number) => void;
     readonly __wbg_set_brushconfig_brush_type: (a: number, b: number) => void;
@@ -4675,6 +4991,89 @@ export interface InitOutput {
     readonly imageprocessor_undo_stroke: (a: number) => number;
     readonly init: () => void;
     readonly init_thread_pool: (a: number) => number;
+    readonly layer_blend_mode: (a: number) => number;
+    readonly layer_clear_transform_center: (a: number) => void;
+    readonly layer_flip_horizontal: (a: number) => number;
+    readonly layer_flip_vertical: (a: number) => number;
+    readonly layer_get_pixels: (a: number, b: number) => void;
+    readonly layer_height: (a: number) => number;
+    readonly layer_id: (a: number) => number;
+    readonly layer_locked: (a: number) => number;
+    readonly layer_name: (a: number, b: number) => void;
+    readonly layer_opacity: (a: number) => number;
+    readonly layer_origin_x: (a: number) => number;
+    readonly layer_origin_y: (a: number) => number;
+    readonly layer_position_x: (a: number) => number;
+    readonly layer_position_y: (a: number) => number;
+    readonly layer_reset_transform: (a: number) => void;
+    readonly layer_rotation_degrees: (a: number) => number;
+    readonly layer_scale_x: (a: number) => number;
+    readonly layer_scale_y: (a: number) => number;
+    readonly layer_set_blend_mode: (a: number, b: number) => void;
+    readonly layer_set_flip_horizontal: (a: number, b: number) => void;
+    readonly layer_set_flip_vertical: (a: number, b: number) => void;
+    readonly layer_set_locked: (a: number, b: number) => void;
+    readonly layer_set_name: (a: number, b: number, c: number) => void;
+    readonly layer_set_opacity: (a: number, b: number) => void;
+    readonly layer_set_origin: (a: number, b: number, c: number) => void;
+    readonly layer_set_origin_x: (a: number, b: number) => void;
+    readonly layer_set_origin_y: (a: number, b: number) => void;
+    readonly layer_set_pixels: (a: number, b: number, c: number) => void;
+    readonly layer_set_position: (a: number, b: number, c: number) => void;
+    readonly layer_set_position_x: (a: number, b: number) => void;
+    readonly layer_set_position_y: (a: number, b: number) => void;
+    readonly layer_set_rotation_degrees: (a: number, b: number) => void;
+    readonly layer_set_scale: (a: number, b: number) => void;
+    readonly layer_set_scale_x: (a: number, b: number) => void;
+    readonly layer_set_scale_y: (a: number, b: number) => void;
+    readonly layer_set_transform_center: (a: number, b: number, c: number) => void;
+    readonly layer_set_transform_center_x: (a: number, b: number) => void;
+    readonly layer_set_transform_center_y: (a: number, b: number) => void;
+    readonly layer_set_visible: (a: number, b: number) => void;
+    readonly layer_transform_center_x: (a: number) => number;
+    readonly layer_transform_center_y: (a: number) => number;
+    readonly layer_visible: (a: number) => number;
+    readonly layer_width: (a: number) => number;
+    readonly layerstack_add_layer: (a: number, b: number, c: number) => number;
+    readonly layerstack_add_layer_from_pixels: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
+    readonly layerstack_align_layers_to_layer: (a: number, b: number, c: number, d: number) => number;
+    readonly layerstack_background_color: (a: number, b: number) => void;
+    readonly layerstack_batch_center_layers: (a: number, b: number, c: number) => number;
+    readonly layerstack_batch_move_layers: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly layerstack_batch_set_rotation: (a: number, b: number, c: number, d: number) => number;
+    readonly layerstack_batch_set_scale: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly layerstack_batch_set_scale_uniform: (a: number, b: number, c: number, d: number) => number;
+    readonly layerstack_canvas_height: (a: number) => number;
+    readonly layerstack_canvas_width: (a: number) => number;
+    readonly layerstack_center_layer: (a: number, b: number) => number;
+    readonly layerstack_clear_all: (a: number) => void;
+    readonly layerstack_duplicate_layer: (a: number, b: number) => number;
+    readonly layerstack_flatten: (a: number) => number;
+    readonly layerstack_get_layer: (a: number, b: number) => number;
+    readonly layerstack_get_layer_bounds: (a: number, b: number, c: number) => void;
+    readonly layerstack_get_layer_by_index: (a: number, b: number) => number;
+    readonly layerstack_get_layer_ids: (a: number, b: number) => void;
+    readonly layerstack_get_layer_names: (a: number, b: number) => void;
+    readonly layerstack_get_layer_opacities: (a: number, b: number) => void;
+    readonly layerstack_get_layer_transform_info: (a: number, b: number, c: number) => void;
+    readonly layerstack_get_layer_visibility: (a: number, b: number) => void;
+    readonly layerstack_layer_count: (a: number) => number;
+    readonly layerstack_merge_down: (a: number, b: number) => number;
+    readonly layerstack_move_layer: (a: number, b: number, c: number) => number;
+    readonly layerstack_new_js: (a: number, b: number) => number;
+    readonly layerstack_remove_layer: (a: number, b: number) => number;
+    readonly layerstack_remove_layer_by_index: (a: number, b: number) => number;
+    readonly layerstack_render_composite: (a: number) => number;
+    readonly layerstack_set_background_color: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly layerstack_set_layer_blend_mode: (a: number, b: number, c: number) => number;
+    readonly layerstack_set_layer_flip: (a: number, b: number, c: number, d: number) => number;
+    readonly layerstack_set_layer_opacity: (a: number, b: number, c: number) => number;
+    readonly layerstack_set_layer_position: (a: number, b: number, c: number, d: number) => number;
+    readonly layerstack_set_layer_rotation: (a: number, b: number, c: number) => number;
+    readonly layerstack_set_layer_scale: (a: number, b: number, c: number, d: number) => number;
+    readonly layerstack_set_layer_visible: (a: number, b: number, c: number) => number;
+    readonly layerstack_set_transform_center_on_canvas: (a: number, b: number, c: number, d: number) => number;
+    readonly layerstack_set_transform_reference_layer: (a: number, b: number, c: number) => number;
     readonly refine_mask_edges: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
     readonly strokepoint_new: (a: number, b: number, c: number, d: bigint) => number;
     readonly brushstroke_point_count: (a: number) => number;
@@ -4932,12 +5331,12 @@ export interface InitOutput {
     readonly wbg_rayon_poolbuilder_numThreads: (a: number) => number;
     readonly wbg_rayon_poolbuilder_receiver: (a: number) => number;
     readonly wbg_rayon_start_worker: (a: number) => void;
-    readonly __wasm_bindgen_func_elem_907: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_1686: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_1689: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2314: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_908: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1687: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1048: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_1828: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_1831: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2457: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1049: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1829: (a: number, b: number, c: number) => void;
     readonly memory: WebAssembly.Memory;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;

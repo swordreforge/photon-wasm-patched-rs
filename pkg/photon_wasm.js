@@ -3,7 +3,7 @@ import { startWorkers } from './snippets/wasm-bindgen-rayon-38edf6e439f6d70d/src
 
 /**
  * 混合模式
- * @enum {0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}
+ * @enum {0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21}
  */
 export const BlendMode = Object.freeze({
     Normal: 0, "0": "Normal",
@@ -16,6 +16,18 @@ export const BlendMode = Object.freeze({
     Exclusion: 7, "7": "Exclusion",
     Lighten: 8, "8": "Lighten",
     Darken: 9, "9": "Darken",
+    ColorDodge: 10, "10": "ColorDodge",
+    ColorBurn: 11, "11": "ColorBurn",
+    LinearDodge: 12, "12": "LinearDodge",
+    LinearBurn: 13, "13": "LinearBurn",
+    VividLight: 14, "14": "VividLight",
+    LinearLight: 15, "15": "LinearLight",
+    PinLight: 16, "16": "PinLight",
+    HardMix: 17, "17": "HardMix",
+    Hue: 18, "18": "Hue",
+    Saturation: 19, "19": "Saturation",
+    Color: 20, "20": "Color",
+    Luminosity: 21, "21": "Luminosity",
 });
 
 /**
@@ -1459,6 +1471,873 @@ export class ImageProcessor {
     }
 }
 if (Symbol.dispose) ImageProcessor.prototype[Symbol.dispose] = ImageProcessor.prototype.free;
+
+/**
+ * 图层结构体
+ * 包含图像数据、变换、混合模式等属性
+ */
+export class Layer {
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(Layer.prototype);
+        obj.__wbg_ptr = ptr;
+        LayerFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        LayerFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_layer_free(ptr, 0);
+    }
+    /**
+     * 获取混合模式
+     * @returns {BlendMode}
+     */
+    get blend_mode() {
+        const ret = wasm.layer_blend_mode(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 清除外部变换中心，恢复使用origin
+     */
+    clear_transform_center() {
+        wasm.layer_clear_transform_center(this.__wbg_ptr);
+    }
+    /**
+     * 获取水平翻转状态
+     * @returns {boolean}
+     */
+    get flipHorizontal() {
+        const ret = wasm.layer_flip_horizontal(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
+     * 获取垂直翻转状态
+     * @returns {boolean}
+     */
+    get flipVertical() {
+        const ret = wasm.layer_flip_vertical(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
+     * 获取图层的像素数据
+     * @returns {Uint8Array}
+     */
+    get_pixels() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.layer_get_pixels(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export4(r0, r1 * 1, 1);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * 获取图层高度
+     * @returns {number}
+     */
+    get height() {
+        const ret = wasm.layer_height(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * 获取图层 ID
+     * @returns {number}
+     */
+    get id() {
+        const ret = wasm.layer_id(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * 获取锁定状态
+     * @returns {boolean}
+     */
+    get locked() {
+        const ret = wasm.layer_locked(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
+     * 获取图层名称
+     * @returns {string}
+     */
+    get name() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.layer_name(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            deferred1_0 = r0;
+            deferred1_1 = r1;
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_export4(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * 获取不透明度 (0-255)
+     * @returns {number}
+     */
+    get opacity() {
+        const ret = wasm.layer_opacity(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 获取变换原点 X（0-1，相对于图层中心）
+     * @returns {number}
+     */
+    get originX() {
+        const ret = wasm.layer_origin_x(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 获取变换原点 Y（0-1，相对于图层中心）
+     * @returns {number}
+     */
+    get originY() {
+        const ret = wasm.layer_origin_y(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 获取位置 X
+     * @returns {number}
+     */
+    get positionX() {
+        const ret = wasm.layer_position_x(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 获取位置 Y
+     * @returns {number}
+     */
+    get positionY() {
+        const ret = wasm.layer_position_y(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 重置所有变换为默认值
+     */
+    reset_transform() {
+        wasm.layer_reset_transform(this.__wbg_ptr);
+    }
+    /**
+     * 获取旋转角度（度）
+     * @returns {number}
+     */
+    get rotation() {
+        const ret = wasm.layer_rotation_degrees(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 获取缩放 X
+     * @returns {number}
+     */
+    get scaleX() {
+        const ret = wasm.layer_scale_x(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 获取缩放 Y
+     * @returns {number}
+     */
+    get scaleY() {
+        const ret = wasm.layer_scale_y(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * 设置混合模式
+     * @param {BlendMode} blend_mode
+     */
+    set blend_mode(blend_mode) {
+        wasm.layer_set_blend_mode(this.__wbg_ptr, blend_mode);
+    }
+    /**
+     * 设置水平翻转
+     * @param {boolean} flip
+     */
+    set flipHorizontal(flip) {
+        wasm.layer_set_flip_horizontal(this.__wbg_ptr, flip);
+    }
+    /**
+     * 设置垂直翻转
+     * @param {boolean} flip
+     */
+    set flipVertical(flip) {
+        wasm.layer_set_flip_vertical(this.__wbg_ptr, flip);
+    }
+    /**
+     * 设置锁定状态
+     * @param {boolean} locked
+     */
+    set locked(locked) {
+        wasm.layer_set_locked(this.__wbg_ptr, locked);
+    }
+    /**
+     * 设置图层名称
+     * @param {string} name
+     */
+    set name(name) {
+        const ptr0 = passStringToWasm0(name, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.layer_set_name(this.__wbg_ptr, ptr0, len0);
+    }
+    /**
+     * 设置不透明度 (0-255)
+     * @param {number} opacity
+     */
+    set opacity(opacity) {
+        wasm.layer_set_opacity(this.__wbg_ptr, opacity);
+    }
+    /**
+     * 设置变换原点
+     * @param {number} origin_x
+     * @param {number} origin_y
+     */
+    set_origin(origin_x, origin_y) {
+        wasm.layer_set_origin(this.__wbg_ptr, origin_x, origin_y);
+    }
+    /**
+     * 设置变换原点 X
+     * @param {number} origin
+     */
+    set originX(origin) {
+        wasm.layer_set_origin_x(this.__wbg_ptr, origin);
+    }
+    /**
+     * 设置变换原点 Y
+     * @param {number} origin
+     */
+    set originY(origin) {
+        wasm.layer_set_origin_y(this.__wbg_ptr, origin);
+    }
+    /**
+     * 设置图层的像素数据
+     * @param {Uint8Array} pixels
+     */
+    set_pixels(pixels) {
+        const ptr0 = passArray8ToWasm0(pixels, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.layer_set_pixels(this.__wbg_ptr, ptr0, len0);
+    }
+    /**
+     * 设置位置
+     * @param {number} x
+     * @param {number} y
+     */
+    set_position(x, y) {
+        wasm.layer_set_position(this.__wbg_ptr, x, y);
+    }
+    /**
+     * 设置位置 X
+     * @param {number} x
+     */
+    set positionX(x) {
+        wasm.layer_set_position_x(this.__wbg_ptr, x);
+    }
+    /**
+     * 设置位置 Y
+     * @param {number} y
+     */
+    set positionY(y) {
+        wasm.layer_set_position_y(this.__wbg_ptr, y);
+    }
+    /**
+     * 设置旋转角度（度）
+     * @param {number} degrees
+     */
+    set rotation(degrees) {
+        wasm.layer_set_rotation_degrees(this.__wbg_ptr, degrees);
+    }
+    /**
+     * 设置缩放（均匀缩放）
+     * @param {number} scale
+     */
+    set_scale(scale) {
+        wasm.layer_set_scale(this.__wbg_ptr, scale);
+    }
+    /**
+     * 设置缩放 X
+     * @param {number} scale
+     */
+    set scaleX(scale) {
+        wasm.layer_set_scale_x(this.__wbg_ptr, scale);
+    }
+    /**
+     * 设置缩放 Y
+     * @param {number} scale
+     */
+    set scaleY(scale) {
+        wasm.layer_set_scale_y(this.__wbg_ptr, scale);
+    }
+    /**
+     * 设置外部变换中心（画布坐标系）
+     * @param {number | null} [center_x]
+     * @param {number | null} [center_y]
+     */
+    set_transform_center(center_x, center_y) {
+        wasm.layer_set_transform_center(this.__wbg_ptr, isLikeNone(center_x) ? 0x100000001 : Math.fround(center_x), isLikeNone(center_y) ? 0x100000001 : Math.fround(center_y));
+    }
+    /**
+     * 设置外部变换中心 X
+     * @param {number | null} [center]
+     */
+    set transformCenterX(center) {
+        wasm.layer_set_transform_center_x(this.__wbg_ptr, isLikeNone(center) ? 0x100000001 : Math.fround(center));
+    }
+    /**
+     * 设置外部变换中心 Y
+     * @param {number | null} [center]
+     */
+    set transformCenterY(center) {
+        wasm.layer_set_transform_center_y(this.__wbg_ptr, isLikeNone(center) ? 0x100000001 : Math.fround(center));
+    }
+    /**
+     * 设置可见性
+     * @param {boolean} visible
+     */
+    set visible(visible) {
+        wasm.layer_set_visible(this.__wbg_ptr, visible);
+    }
+    /**
+     * 获取外部变换中心 X（画布坐标系）
+     * @returns {number | undefined}
+     */
+    get transformCenterX() {
+        const ret = wasm.layer_transform_center_x(this.__wbg_ptr);
+        return ret === 0x100000001 ? undefined : ret;
+    }
+    /**
+     * 获取外部变换中心 Y（画布坐标系）
+     * @returns {number | undefined}
+     */
+    get transformCenterY() {
+        const ret = wasm.layer_transform_center_y(this.__wbg_ptr);
+        return ret === 0x100000001 ? undefined : ret;
+    }
+    /**
+     * 获取可见性
+     * @returns {boolean}
+     */
+    get visible() {
+        const ret = wasm.layer_visible(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
+     * 获取图层宽度
+     * @returns {number}
+     */
+    get width() {
+        const ret = wasm.layer_width(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+}
+if (Symbol.dispose) Layer.prototype[Symbol.dispose] = Layer.prototype.free;
+
+/**
+ * 图层堆栈
+ * 管理多个图层及其合成顺序
+ */
+export class LayerStack {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        LayerStackFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_layerstack_free(ptr, 0);
+    }
+    /**
+     * 添加新图层
+     * @param {string | null} [name]
+     * @returns {number}
+     */
+    add_layer(name) {
+        var ptr0 = isLikeNone(name) ? 0 : passStringToWasm0(name, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        var len0 = WASM_VECTOR_LEN;
+        const ret = wasm.layerstack_add_layer(this.__wbg_ptr, ptr0, len0);
+        return ret >>> 0;
+    }
+    /**
+     * 从图像数据添加图层
+     * @param {Uint8Array} pixels
+     * @param {string | null} [name]
+     * @returns {number}
+     */
+    add_layer_from_pixels(pixels, name) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            const ptr0 = passArray8ToWasm0(pixels, wasm.__wbindgen_export);
+            const len0 = WASM_VECTOR_LEN;
+            var ptr1 = isLikeNone(name) ? 0 : passStringToWasm0(name, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+            var len1 = WASM_VECTOR_LEN;
+            wasm.layerstack_add_layer_from_pixels(retptr, this.__wbg_ptr, ptr0, len0, ptr1, len1);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+            if (r2) {
+                throw takeObject(r1);
+            }
+            return r0 >>> 0;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * 对齐多个图层到指定图层
+     * @param {Uint32Array} target_ids
+     * @param {number} reference_id
+     * @returns {boolean}
+     */
+    align_layers_to_layer(target_ids, reference_id) {
+        const ptr0 = passArray32ToWasm0(target_ids, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.layerstack_align_layers_to_layer(this.__wbg_ptr, ptr0, len0, reference_id);
+        return ret !== 0;
+    }
+    /**
+     * 获取背景颜色
+     * @returns {Uint8Array}
+     */
+    get background_color() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.layerstack_background_color(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export4(r0, r1 * 1, 1);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * 批量将图层移动到画布中心
+     * @param {Uint32Array} layer_ids
+     * @returns {number}
+     */
+    batch_center_layers(layer_ids) {
+        const ptr0 = passArray32ToWasm0(layer_ids, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.layerstack_batch_center_layers(this.__wbg_ptr, ptr0, len0);
+        return ret >>> 0;
+    }
+    /**
+     * 批量设置多个图层的位置（相对偏移）
+     * @param {Uint32Array} layer_ids
+     * @param {number} delta_x
+     * @param {number} delta_y
+     * @returns {number}
+     */
+    batch_move_layers(layer_ids, delta_x, delta_y) {
+        const ptr0 = passArray32ToWasm0(layer_ids, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.layerstack_batch_move_layers(this.__wbg_ptr, ptr0, len0, delta_x, delta_y);
+        return ret >>> 0;
+    }
+    /**
+     * 批量设置多个图层的旋转
+     * @param {Uint32Array} layer_ids
+     * @param {number} degrees
+     * @returns {number}
+     */
+    batch_set_rotation(layer_ids, degrees) {
+        const ptr0 = passArray32ToWasm0(layer_ids, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.layerstack_batch_set_rotation(this.__wbg_ptr, ptr0, len0, degrees);
+        return ret >>> 0;
+    }
+    /**
+     * 批量设置多个图层的缩放
+     * @param {Uint32Array} layer_ids
+     * @param {number} scale_x
+     * @param {number} scale_y
+     * @returns {number}
+     */
+    batch_set_scale(layer_ids, scale_x, scale_y) {
+        const ptr0 = passArray32ToWasm0(layer_ids, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.layerstack_batch_set_scale(this.__wbg_ptr, ptr0, len0, scale_x, scale_y);
+        return ret >>> 0;
+    }
+    /**
+     * 批量设置多个图层的缩放（均匀缩放）
+     * @param {Uint32Array} layer_ids
+     * @param {number} scale
+     * @returns {number}
+     */
+    batch_set_scale_uniform(layer_ids, scale) {
+        const ptr0 = passArray32ToWasm0(layer_ids, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.layerstack_batch_set_scale_uniform(this.__wbg_ptr, ptr0, len0, scale);
+        return ret >>> 0;
+    }
+    /**
+     * 获取画布高度
+     * @returns {number}
+     */
+    get canvas_height() {
+        const ret = wasm.layerstack_canvas_height(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * 获取画布宽度
+     * @returns {number}
+     */
+    get canvas_width() {
+        const ret = wasm.layerstack_canvas_width(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * 将图层移动到画布中心
+     * @param {number} id
+     * @returns {boolean}
+     */
+    center_layer(id) {
+        const ret = wasm.layerstack_center_layer(this.__wbg_ptr, id);
+        return ret !== 0;
+    }
+    /**
+     * 清空所有图层
+     */
+    clear_all() {
+        wasm.layerstack_clear_all(this.__wbg_ptr);
+    }
+    /**
+     * 复制图层
+     * @param {number} id
+     * @returns {number | undefined}
+     */
+    duplicate_layer(id) {
+        const ret = wasm.layerstack_duplicate_layer(this.__wbg_ptr, id);
+        return ret === 0x100000001 ? undefined : ret;
+    }
+    /**
+     * 合并所有可见图层
+     * @returns {boolean}
+     */
+    flatten() {
+        const ret = wasm.layerstack_flatten(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
+     * 通过 ID 获取图层
+     * @param {number} id
+     * @returns {Layer | undefined}
+     */
+    get_layer(id) {
+        const ret = wasm.layerstack_get_layer(this.__wbg_ptr, id);
+        return ret === 0 ? undefined : Layer.__wrap(ret);
+    }
+    /**
+     * 获取图层的实际边界框（考虑变换后的位置）
+     * @param {number} id
+     * @returns {Float32Array | undefined}
+     */
+    get_layer_bounds(id) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.layerstack_get_layer_bounds(retptr, this.__wbg_ptr, id);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            let v1;
+            if (r0 !== 0) {
+                v1 = getArrayF32FromWasm0(r0, r1).slice();
+                wasm.__wbindgen_export4(r0, r1 * 4, 4);
+            }
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * 通过索引获取图层（索引 0 为最底层）
+     * @param {number} index
+     * @returns {Layer | undefined}
+     */
+    get_layer_by_index(index) {
+        const ret = wasm.layerstack_get_layer_by_index(this.__wbg_ptr, index);
+        return ret === 0 ? undefined : Layer.__wrap(ret);
+    }
+    /**
+     * 获取所有图层 ID 列表
+     * @returns {Uint32Array}
+     */
+    get_layer_ids() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.layerstack_get_layer_ids(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayU32FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export4(r0, r1 * 4, 4);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * 获取所有图层名称列表
+     * @returns {string[]}
+     */
+    get_layer_names() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.layerstack_get_layer_names(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayJsValueFromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export4(r0, r1 * 4, 4);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * 获取所有图层不透明度列表
+     * @returns {Uint8Array}
+     */
+    get_layer_opacities() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.layerstack_get_layer_opacities(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export4(r0, r1 * 1, 1);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * 获取图层的变换信息（用于调试）
+     * @param {number} id
+     * @returns {string | undefined}
+     */
+    get_layer_transform_info(id) {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.layerstack_get_layer_transform_info(retptr, this.__wbg_ptr, id);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            let v1;
+            if (r0 !== 0) {
+                v1 = getStringFromWasm0(r0, r1).slice();
+                wasm.__wbindgen_export4(r0, r1 * 1, 1);
+            }
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * 获取所有图层可见性列表 (0 = 不可见, 1 = 可见)
+     * @returns {Uint8Array}
+     */
+    get_layer_visibility() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.layerstack_get_layer_visibility(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export4(r0, r1 * 1, 1);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * 获取图层数量
+     * @returns {number}
+     */
+    get layer_count() {
+        const ret = wasm.layerstack_layer_count(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * 向下合并图层
+     * 将指定图层与其下方的图层合并
+     * @param {number} index
+     * @returns {boolean}
+     */
+    merge_down(index) {
+        const ret = wasm.layerstack_merge_down(this.__wbg_ptr, index);
+        return ret !== 0;
+    }
+    /**
+     * 移动图层
+     * from_index: 原始索引
+     * to_index: 目标索引
+     * @param {number} from_index
+     * @param {number} to_index
+     * @returns {boolean}
+     */
+    move_layer(from_index, to_index) {
+        const ret = wasm.layerstack_move_layer(this.__wbg_ptr, from_index, to_index);
+        return ret !== 0;
+    }
+    /**
+     * 创建新的图层堆栈（JavaScript 调用）
+     * @param {number} width
+     * @param {number} height
+     */
+    constructor(width, height) {
+        const ret = wasm.layerstack_new_js(width, height);
+        this.__wbg_ptr = ret >>> 0;
+        LayerStackFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * 删除图层
+     * @param {number} id
+     * @returns {boolean}
+     */
+    remove_layer(id) {
+        const ret = wasm.layerstack_remove_layer(this.__wbg_ptr, id);
+        return ret !== 0;
+    }
+    /**
+     * 通过索引删除图层
+     * @param {number} index
+     * @returns {boolean}
+     */
+    remove_layer_by_index(index) {
+        const ret = wasm.layerstack_remove_layer_by_index(this.__wbg_ptr, index);
+        return ret !== 0;
+    }
+    /**
+     * 合成所有图层，生成最终图像
+     * @returns {PhotonImage}
+     */
+    render_composite() {
+        const ret = wasm.layerstack_render_composite(this.__wbg_ptr);
+        return PhotonImage.__wrap(ret);
+    }
+    /**
+     * 设置背景颜色
+     * @param {number} r
+     * @param {number} g
+     * @param {number} b
+     * @param {number} a
+     */
+    set_background_color(r, g, b, a) {
+        wasm.layerstack_set_background_color(this.__wbg_ptr, r, g, b, a);
+    }
+    /**
+     * 设置图层混合模式
+     * @param {number} id
+     * @param {BlendMode} blend_mode
+     * @returns {boolean}
+     */
+    set_layer_blend_mode(id, blend_mode) {
+        const ret = wasm.layerstack_set_layer_blend_mode(this.__wbg_ptr, id, blend_mode);
+        return ret !== 0;
+    }
+    /**
+     * 设置图层翻转
+     * @param {number} id
+     * @param {boolean} horizontal
+     * @param {boolean} vertical
+     * @returns {boolean}
+     */
+    set_layer_flip(id, horizontal, vertical) {
+        const ret = wasm.layerstack_set_layer_flip(this.__wbg_ptr, id, horizontal, vertical);
+        return ret !== 0;
+    }
+    /**
+     * 设置图层不透明度
+     * @param {number} id
+     * @param {number} opacity
+     * @returns {boolean}
+     */
+    set_layer_opacity(id, opacity) {
+        const ret = wasm.layerstack_set_layer_opacity(this.__wbg_ptr, id, opacity);
+        return ret !== 0;
+    }
+    /**
+     * 设置图层位置
+     * @param {number} id
+     * @param {number} x
+     * @param {number} y
+     * @returns {boolean}
+     */
+    set_layer_position(id, x, y) {
+        const ret = wasm.layerstack_set_layer_position(this.__wbg_ptr, id, x, y);
+        return ret !== 0;
+    }
+    /**
+     * 设置图层旋转
+     * @param {number} id
+     * @param {number} degrees
+     * @returns {boolean}
+     */
+    set_layer_rotation(id, degrees) {
+        const ret = wasm.layerstack_set_layer_rotation(this.__wbg_ptr, id, degrees);
+        return ret !== 0;
+    }
+    /**
+     * 设置图层缩放
+     * @param {number} id
+     * @param {number} scale_x
+     * @param {number} scale_y
+     * @returns {boolean}
+     */
+    set_layer_scale(id, scale_x, scale_y) {
+        const ret = wasm.layerstack_set_layer_scale(this.__wbg_ptr, id, scale_x, scale_y);
+        return ret !== 0;
+    }
+    /**
+     * 设置图层可见性
+     * @param {number} id
+     * @param {boolean} visible
+     * @returns {boolean}
+     */
+    set_layer_visible(id, visible) {
+        const ret = wasm.layerstack_set_layer_visible(this.__wbg_ptr, id, visible);
+        return ret !== 0;
+    }
+    /**
+     * 以画布指定点为变换中心
+     * target_id: 要变换的图层ID
+     * center_x, center_y: 画布坐标系中的变换中心点
+     * @param {number} target_id
+     * @param {number} center_x
+     * @param {number} center_y
+     * @returns {boolean}
+     */
+    set_transform_center_on_canvas(target_id, center_x, center_y) {
+        const ret = wasm.layerstack_set_transform_center_on_canvas(this.__wbg_ptr, target_id, center_x, center_y);
+        return ret !== 0;
+    }
+    /**
+     * 以指定图层中心为参照点进行变换
+     * target_id: 要变换的图层ID
+     * reference_id: 参照图层ID（None表示使用画布中心）
+     * @param {number} target_id
+     * @param {number | null} [reference_id]
+     * @returns {boolean}
+     */
+    set_transform_reference_layer(target_id, reference_id) {
+        const ret = wasm.layerstack_set_transform_reference_layer(this.__wbg_ptr, target_id, isLikeNone(reference_id) ? 0x100000001 : (reference_id) >>> 0);
+        return ret !== 0;
+    }
+}
+if (Symbol.dispose) LayerStack.prototype[Symbol.dispose] = LayerStack.prototype.free;
 
 /**
  * Provides the image's height, width, and contains the image's raw pixels.
@@ -7514,6 +8393,9 @@ function __wbg_get_imports(memory) {
             const ret = getObject(arg0).length;
             return ret;
         },
+        __wbg_log_3c5e4b64af29e724: function(arg0) {
+            console.log(getObject(arg0));
+        },
         __wbg_msCrypto_bd5a034af96bcba6: function(arg0) {
             const ret = getObject(arg0).msCrypto;
             return addHeapObject(ret);
@@ -7541,7 +8423,7 @@ function __wbg_get_imports(memory) {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_2314(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_2457(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -7571,7 +8453,7 @@ function __wbg_get_imports(memory) {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_2314(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_2457(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -7732,18 +8614,18 @@ function __wbg_get_imports(memory) {
             return ret;
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 240, function: Function { arguments: [Externref], shim_idx: 241, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_907, __wasm_bindgen_func_elem_908);
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 243, function: Function { arguments: [Externref], shim_idx: 244, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1048, __wasm_bindgen_func_elem_1049);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 393, function: Function { arguments: [Externref], shim_idx: 396, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1686, __wasm_bindgen_func_elem_1689);
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 395, function: Function { arguments: [Externref], shim_idx: 398, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1828, __wasm_bindgen_func_elem_1831);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000003: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 393, function: Function { arguments: [NamedExternref("MessageEvent")], shim_idx: 394, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1686, __wasm_bindgen_func_elem_1687);
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 395, function: Function { arguments: [NamedExternref("MessageEvent")], shim_idx: 396, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1828, __wasm_bindgen_func_elem_1829);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000004: function(arg0) {
@@ -7802,18 +8684,18 @@ function __wbg_get_imports(memory) {
     };
 }
 
-function __wasm_bindgen_func_elem_908(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_908(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1049(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1049(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_1687(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1687(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1829(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1829(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_1689(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1831(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1689(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1831(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -7824,8 +8706,8 @@ function __wasm_bindgen_func_elem_1689(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_2314(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_2314(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_2457(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_2457(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 const BrushConfigFinalization = (typeof FinalizationRegistry === 'undefined')
@@ -7840,6 +8722,12 @@ const ColorFinalization = (typeof FinalizationRegistry === 'undefined')
 const ImageProcessorFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_imageprocessor_free(ptr >>> 0, 1));
+const LayerFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_layer_free(ptr >>> 0, 1));
+const LayerStackFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_layerstack_free(ptr >>> 0, 1));
 const PhotonImageFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_photonimage_free(ptr >>> 0, 1));
@@ -7952,6 +8840,11 @@ function dropObject(idx) {
     heap_next = idx;
 }
 
+function getArrayF32FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getFloat32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
+}
+
 function getArrayJsValueFromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     const mem = getDataViewMemory0();
@@ -7960,6 +8853,11 @@ function getArrayJsValueFromWasm0(ptr, len) {
         result.push(takeObject(mem.getUint32(i, true)));
     }
     return result;
+}
+
+function getArrayU32FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getUint32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
 }
 
 function getArrayU8FromWasm0(ptr, len) {
@@ -7991,6 +8889,14 @@ function getFloat32ArrayMemory0() {
 function getStringFromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     return decodeText(ptr, len);
+}
+
+let cachedUint32ArrayMemory0 = null;
+function getUint32ArrayMemory0() {
+    if (cachedUint32ArrayMemory0 === null || cachedUint32ArrayMemory0.buffer !== wasm.memory.buffer) {
+        cachedUint32ArrayMemory0 = new Uint32Array(wasm.memory.buffer);
+    }
+    return cachedUint32ArrayMemory0;
 }
 
 let cachedUint8ArrayMemory0 = null;
@@ -8054,6 +8960,13 @@ function makeMutClosure(arg0, arg1, dtor, f) {
     };
     CLOSURE_DTORS.register(real, state, state);
     return real;
+}
+
+function passArray32ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 4, 4) >>> 0;
+    getUint32ArrayMemory0().set(arg, ptr / 4);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
 }
 
 function passArray8ToWasm0(arg, malloc) {
@@ -8151,6 +9064,7 @@ function __wbg_finalize_init(instance, module, thread_stack_size) {
     wasmModule = module;
     cachedDataViewMemory0 = null;
     cachedFloat32ArrayMemory0 = null;
+    cachedUint32ArrayMemory0 = null;
     cachedUint8ArrayMemory0 = null;
     cachedUint8ClampedArrayMemory0 = null;
     if (typeof thread_stack_size !== 'undefined' && (typeof thread_stack_size !== 'number' || thread_stack_size === 0 || thread_stack_size % 65536 !== 0)) {
