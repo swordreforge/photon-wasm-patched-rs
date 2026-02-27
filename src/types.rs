@@ -32,7 +32,7 @@ pub enum BrushType {
 
 /// 混合模式
 #[wasm_bindgen]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum BlendMode {
     Normal,
     Multiply,
@@ -44,6 +44,18 @@ pub enum BlendMode {
     Exclusion,
     Lighten,
     Darken,
+    ColorDodge,
+    ColorBurn,
+    LinearDodge,
+    LinearBurn,
+    VividLight,
+    LinearLight,
+    PinLight,
+    HardMix,
+    Hue,
+    Saturation,
+    Color,
+    Luminosity,
 }
 
 /// 笔刷配置

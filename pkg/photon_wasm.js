@@ -1495,6 +1495,45 @@ export class Layer {
         wasm.__wbg_layer_free(ptr, 0);
     }
     /**
+     * 调整图层明度
+     * @param {number} level
+     * @param {ColorSpace} color_space
+     * @returns {boolean}
+     */
+    adjust_lightness(level, color_space) {
+        const ret = wasm.layer_adjust_lightness(this.__wbg_ptr, level, color_space);
+        return ret !== 0;
+    }
+    /**
+     * 添加彩色噪点到图层
+     * @param {number} r_factor
+     * @param {number} g_factor
+     * @param {number} b_factor
+     * @param {number} strength
+     * @returns {boolean}
+     */
+    apply_color_noise(r_factor, g_factor, b_factor, strength) {
+        const ret = wasm.layer_apply_color_noise(this.__wbg_ptr, r_factor, g_factor, b_factor, strength);
+        return ret !== 0;
+    }
+    /**
+     * 添加噪点到图层
+     * @param {number} strength
+     * @returns {boolean}
+     */
+    apply_noise(strength) {
+        const ret = wasm.layer_apply_noise(this.__wbg_ptr, strength);
+        return ret !== 0;
+    }
+    /**
+     * 添加粉色噪点到图层
+     * @returns {boolean}
+     */
+    apply_pink_noise() {
+        const ret = wasm.layer_apply_pink_noise(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
      * 获取混合模式
      * @returns {BlendMode}
      */
@@ -1503,10 +1542,44 @@ export class Layer {
         return ret;
     }
     /**
+     * 清除色彩空间转换
+     * @returns {boolean}
+     */
+    clear_color_space_conversion() {
+        const ret = wasm.layer_clear_color_space_conversion(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
+     * 清除明度调整
+     * @returns {boolean}
+     */
+    clear_lightness() {
+        const ret = wasm.layer_clear_lightness(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
+     * 清除噪点效果
+     * @returns {boolean}
+     */
+    clear_noise() {
+        const ret = wasm.layer_clear_noise(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
      * 清除外部变换中心，恢复使用origin
      */
     clear_transform_center() {
         wasm.layer_clear_transform_center(this.__wbg_ptr);
+    }
+    /**
+     * 转换图层色彩空间
+     * @param {ColorSpace} from
+     * @param {ColorSpace} to
+     * @returns {boolean}
+     */
+    convert_color_space(from, to) {
+        const ret = wasm.layer_convert_color_space(this.__wbg_ptr, from, to);
+        return ret !== 0;
     }
     /**
      * 获取水平翻转状态
@@ -1523,6 +1596,23 @@ export class Layer {
     get flipVertical() {
         const ret = wasm.layer_flip_vertical(this.__wbg_ptr);
         return ret !== 0;
+    }
+    /**
+     * 获取透视变换的四个角点
+     * @returns {Float32Array}
+     */
+    get_perspective_points() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.layer_get_perspective_points(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var v1 = getArrayF32FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_export4(r0, r1 * 4, 4);
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
     }
     /**
      * 获取图层的像素数据
@@ -1610,6 +1700,14 @@ export class Layer {
         return ret;
     }
     /**
+     * 获取是否启用透视变换
+     * @returns {boolean}
+     */
+    get perspectiveEnabled() {
+        const ret = wasm.layer_perspective_enabled(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
      * 获取位置 X
      * @returns {number}
      */
@@ -1624,6 +1722,20 @@ export class Layer {
     get positionY() {
         const ret = wasm.layer_position_y(this.__wbg_ptr);
         return ret;
+    }
+    /**
+     * 重置透视变换为默认状态
+     */
+    reset_perspective() {
+        wasm.layer_reset_perspective(this.__wbg_ptr);
+    }
+    /**
+     * 重置智能对象到原始状态
+     * @returns {boolean}
+     */
+    reset_smart_object() {
+        const ret = wasm.layer_reset_smart_object(this.__wbg_ptr);
+        return ret !== 0;
     }
     /**
      * 重置所有变换为默认值
@@ -1722,6 +1834,27 @@ export class Layer {
         wasm.layer_set_origin_y(this.__wbg_ptr, origin);
     }
     /**
+     * 设置是否启用透视变换
+     * @param {boolean} enabled
+     */
+    set perspectiveEnabled(enabled) {
+        wasm.layer_set_perspective_enabled(this.__wbg_ptr, enabled);
+    }
+    /**
+     * 设置透视变换的四个角点（相对坐标 0-1）
+     * @param {number} top_left_x
+     * @param {number} top_left_y
+     * @param {number} top_right_x
+     * @param {number} top_right_y
+     * @param {number} bottom_left_x
+     * @param {number} bottom_left_y
+     * @param {number} bottom_right_x
+     * @param {number} bottom_right_y
+     */
+    set_perspective_points(top_left_x, top_left_y, top_right_x, top_right_y, bottom_left_x, bottom_left_y, bottom_right_x, bottom_right_y) {
+        wasm.layer_set_perspective_points(this.__wbg_ptr, top_left_x, top_left_y, top_right_x, top_right_y, bottom_left_x, bottom_left_y, bottom_right_x, bottom_right_y);
+    }
+    /**
      * 设置图层的像素数据
      * @param {Uint8Array} pixels
      */
@@ -1781,6 +1914,13 @@ export class Layer {
         wasm.layer_set_scale_y(this.__wbg_ptr, scale);
     }
     /**
+     * 设置是否为智能对象
+     * @param {boolean} smart_object
+     */
+    set smartObject(smart_object) {
+        wasm.layer_set_smart_object(this.__wbg_ptr, smart_object);
+    }
+    /**
      * 设置外部变换中心（画布坐标系）
      * @param {number | null} [center_x]
      * @param {number | null} [center_y]
@@ -1810,6 +1950,14 @@ export class Layer {
         wasm.layer_set_visible(this.__wbg_ptr, visible);
     }
     /**
+     * 获取是否为智能对象
+     * @returns {boolean}
+     */
+    get smartObject() {
+        const ret = wasm.layer_smart_object(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
      * 获取外部变换中心 X（画布坐标系）
      * @returns {number | undefined}
      */
@@ -1824,6 +1972,14 @@ export class Layer {
     get transformCenterY() {
         const ret = wasm.layer_transform_center_y(this.__wbg_ptr);
         return ret === 0x100000001 ? undefined : ret;
+    }
+    /**
+     * 更新智能对象的原始图像（在编辑内容后调用）
+     * @returns {boolean}
+     */
+    update_smart_object_original() {
+        const ret = wasm.layer_update_smart_object_original(this.__wbg_ptr);
+        return ret !== 0;
     }
     /**
      * 获取可见性
@@ -2162,6 +2318,23 @@ export class LayerStack {
         }
     }
     /**
+     * 获取是否启用增量渲染
+     * @returns {boolean}
+     */
+    get incrementalEnabled() {
+        const ret = wasm.layerstack_incremental_enabled(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
+     * 增量渲染：只重新渲染脏区域
+     * 如果没有脏区域，返回缓存的图像
+     * @returns {PhotonImage}
+     */
+    incremental_render() {
+        const ret = wasm.layerstack_incremental_render(this.__wbg_ptr);
+        return PhotonImage.__wrap(ret);
+    }
+    /**
      * 获取图层数量
      * @returns {number}
      */
@@ -2229,6 +2402,15 @@ export class LayerStack {
         return PhotonImage.__wrap(ret);
     }
     /**
+     * 重置图层透视变换
+     * @param {number} id
+     * @returns {boolean}
+     */
+    reset_layer_perspective(id) {
+        const ret = wasm.layerstack_reset_layer_perspective(this.__wbg_ptr, id);
+        return ret !== 0;
+    }
+    /**
      * 设置背景颜色
      * @param {number} r
      * @param {number} g
@@ -2237,6 +2419,13 @@ export class LayerStack {
      */
     set_background_color(r, g, b, a) {
         wasm.layerstack_set_background_color(this.__wbg_ptr, r, g, b, a);
+    }
+    /**
+     * 设置是否启用增量渲染
+     * @param {boolean} enabled
+     */
+    set_incremental_rendering(enabled) {
+        wasm.layerstack_set_incremental_rendering(this.__wbg_ptr, enabled);
     }
     /**
      * 设置图层混合模式
@@ -2270,6 +2459,45 @@ export class LayerStack {
         return ret !== 0;
     }
     /**
+     * 设置图层透视变换是否启用
+     * @param {number} id
+     * @param {boolean} enabled
+     * @returns {boolean}
+     */
+    set_layer_perspective_enabled(id, enabled) {
+        const ret = wasm.layerstack_set_layer_perspective_enabled(this.__wbg_ptr, id, enabled);
+        return ret !== 0;
+    }
+    /**
+     * 设置图层透视变换的四个角点
+     * @param {number} id
+     * @param {number} top_left_x
+     * @param {number} top_left_y
+     * @param {number} top_right_x
+     * @param {number} top_right_y
+     * @param {number} bottom_left_x
+     * @param {number} bottom_left_y
+     * @param {number} bottom_right_x
+     * @param {number} bottom_right_y
+     * @returns {boolean}
+     */
+    set_layer_perspective_points(id, top_left_x, top_left_y, top_right_x, top_right_y, bottom_left_x, bottom_left_y, bottom_right_x, bottom_right_y) {
+        const ret = wasm.layerstack_set_layer_perspective_points(this.__wbg_ptr, id, top_left_x, top_left_y, top_right_x, top_right_y, bottom_left_x, bottom_left_y, bottom_right_x, bottom_right_y);
+        return ret !== 0;
+    }
+    /**
+     * 设置图层的像素数据
+     * @param {number} id
+     * @param {Uint8Array} pixels
+     * @returns {boolean}
+     */
+    set_layer_pixels(id, pixels) {
+        const ptr0 = passArray8ToWasm0(pixels, wasm.__wbindgen_export);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.layerstack_set_layer_pixels(this.__wbg_ptr, id, ptr0, len0);
+        return ret !== 0;
+    }
+    /**
      * 设置图层位置
      * @param {number} id
      * @param {number} x
@@ -2299,6 +2527,16 @@ export class LayerStack {
      */
     set_layer_scale(id, scale_x, scale_y) {
         const ret = wasm.layerstack_set_layer_scale(this.__wbg_ptr, id, scale_x, scale_y);
+        return ret !== 0;
+    }
+    /**
+     * 设置图层是否为智能对象
+     * @param {number} id
+     * @param {boolean} smart_object
+     * @returns {boolean}
+     */
+    set_layer_smart_object(id, smart_object) {
+        const ret = wasm.layerstack_set_layer_smart_object(this.__wbg_ptr, id, smart_object);
         return ret !== 0;
     }
     /**
@@ -8393,9 +8631,6 @@ function __wbg_get_imports(memory) {
             const ret = getObject(arg0).length;
             return ret;
         },
-        __wbg_log_3c5e4b64af29e724: function(arg0) {
-            console.log(getObject(arg0));
-        },
         __wbg_msCrypto_bd5a034af96bcba6: function(arg0) {
             const ret = getObject(arg0).msCrypto;
             return addHeapObject(ret);
@@ -8423,7 +8658,7 @@ function __wbg_get_imports(memory) {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_2457(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_2510(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -8453,7 +8688,7 @@ function __wbg_get_imports(memory) {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_2457(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_2510(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -8615,17 +8850,17 @@ function __wbg_get_imports(memory) {
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { dtor_idx: 243, function: Function { arguments: [Externref], shim_idx: 244, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1048, __wasm_bindgen_func_elem_1049);
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1102, __wasm_bindgen_func_elem_1103);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { dtor_idx: 395, function: Function { arguments: [Externref], shim_idx: 398, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1828, __wasm_bindgen_func_elem_1831);
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1882, __wasm_bindgen_func_elem_1885);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000003: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { dtor_idx: 395, function: Function { arguments: [NamedExternref("MessageEvent")], shim_idx: 396, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1828, __wasm_bindgen_func_elem_1829);
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1882, __wasm_bindgen_func_elem_1883);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000004: function(arg0) {
@@ -8684,18 +8919,18 @@ function __wbg_get_imports(memory) {
     };
 }
 
-function __wasm_bindgen_func_elem_1049(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1049(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1103(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1103(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_1829(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1829(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1883(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1883(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_1831(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1885(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1831(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1885(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -8706,8 +8941,8 @@ function __wasm_bindgen_func_elem_1831(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_2457(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_2457(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_2510(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_2510(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 const BrushConfigFinalization = (typeof FinalizationRegistry === 'undefined')

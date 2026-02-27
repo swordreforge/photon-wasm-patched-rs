@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图层高级功能演示 - 智能对象、噪点、明度、透视</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #4ecca3;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+        }
+        .controls {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            height: fit-content;
+        }
+        .control-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #0f3460;
+        }
+        .control-section:last-child {
+            border-bottom: none;
+        }
+        .control-section h3 {
+            color: #4ecca3;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #bbb;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        select, button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        select {
+            background: #0f3460;
+            color: #eee;
+        }
+        button {
+            background: #4ecca3;
+            color: #1a1a2e;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #45b393;
+        }
+        button.secondary {
+            background: #e94560;
+            color: #fff;
+        }
+        button.secondary:hover {
+            background: #c73e54;
+        }
+        .canvas-container {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            max-width: 100%;
+            border: 2px solid #0f3460;
+            border-radius: 5px;
+        }
+        .layer-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0f3460;
+            border-radius: 5px;
+            width: 100%;
+        }
+        .layer-info h3 {
+            color: #4ecca3;
+            margin-bottom: 10px;
+        }
+        .layer-info p {
+            font-size: 14px;
+            margin: 5px 0;
+            color: #bbb;
+        }
+        .value-display {
+            font-size: 12px;
+            color: #4ecca3;
+        }
+        .perspective-visualizer {
+            width: 200px;
+            height: 150px;
+            background: #0f3460;
+            margin: 10px auto;
+            position: relative;
+            border: 1px solid #4ecca3;
+        }
+        .perspective-corner {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #e94560;
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 图层高级功能演示</h1>
+        
+        <div class="main-content">
+            <div class="controls">
+                <!-- 图层选择 -->
+                <div class="control-section">
+                    <h3>📚 图层管理</h3>
+                    <div class="control-group">
+                        <label>选择图层</label>
+                        <select id="layerSelect"></select>
+                    </div>
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="smartObjectToggle">
+                            智能对象
+                        </label>
+                    </div>
+                    <button id="resetSmartObject">重置到原始状态</button>
+                    <button id="updateOriginal" class="secondary">更新原始图像</button>
+                </div>
+
+                <!-- 噪点调整 -->
+                <div class="control-section">
+                    <h3>📊 噪点调整</h3>
+                    <div class="control-group">
+                        <label>噪点强度: <span id="noiseStrengthValue" class="value-display">0</span></label>
+                        <input type="range" id="noiseStrength" min="0" max="100" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label>噪点类型</label>
+                        <select id="noiseType">
+                            <option value="random">随机噪点</option>
+                            <option value="color">彩色噪点</option>
+                            <option value="pink">粉色噪点</option>
+                        </select>
+                    </div>
+                    <div id="colorNoiseControls" style="display: none;">
+                        <div class="control-group">
+                            <label>红色因子: <span id="rFactorValue" class="value-display">1.0</span></label>
+                            <input type="range" id="rFactor" min="0" max="2" step="0.1" value="1">
+                        </div>
+                        <div class="control-group">
+                            <label>绿色因子: <span id="gFactorValue" class="value-display">1.0</span></label>
+                            <input type="range" id="gFactor" min="0" max="2" step="0.1" value="1">
+                        </div>
+                        <div class="control-group">
+                            <label>蓝色因子: <span id="bFactorValue" class="value-display">1.0</span></label>
+                            <input type="range" id="bFactor" min="0" max="2" step="0.1" value="1">
+                        </div>
+                    </div>
+                    <button id="applyNoise">应用噪点</button>
+                    <button id="clearNoise" class="secondary">清除噪点</button>
+                </div>
+
+                <!-- 明度调整 -->
+                <div class="control-section">
+                    <h3>💡 明度调整</h3>
+                    <div class="control-group">
+                        <label>明度: <span id="lightnessValue" class="value-display">0</span></label>
+                        <input type="range" id="lightness" min="-100" max="100" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label>色彩空间</label>
+                        <select id="colorSpace">
+                            <option value="Hsl">HSL</option>
+                            <option value="Lch">LCH</option>
+                            <option value="Hsv">HSV</option>
+                            <option value="Hsluv">HSLuv</option>
+                        </select>
+                    </div>
+                    <button id="applyLightness">应用明度调整</button>
+                    <button id="clearLightness" class="secondary">清除明度调整</button>
+                </div>
+
+                <!-- 透视变换 -->
+                <div class="control-section">
+                    <h3>🔲 透视变换</h3>
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="perspectiveEnabled">
+                            启用透视变换
+                        </label>
+                    </div>
+                    <div class="perspective-visualizer" id="perspectiveVisualizer">
+                        <div class="perspective-corner" id="cornerTL" style="left: 0%; top: 0%;"></div>
+                        <div class="perspective-corner" id="cornerTR" style="left: 100%; top: 0%;"></div>
+                        <div class="perspective-corner" id="cornerBL" style="left: 0%; top: 100%;"></div>
+                        <div class="perspective-corner" id="cornerBR" style="left: 100%; top: 100%;"></div>
+                    </div>
+                    <button id="resetPerspective" class="secondary">重置透视</button>
+                </div>
+
+                <!-- 色彩空间转换 -->
+                <div class="control-section">
+                    <h3>🎨 色彩空间转换</h3>
+                    <div class="control-group">
+                        <label>从</label>
+                        <select id="colorSpaceFrom">
+                            <option value="Hsl">HSL</option>
+                            <option value="Lch">LCH</option>
+                            <option value="Hsv">HSV</option>
+                            <option value="Hsluv">HSLuv</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>到</label>
+                        <select id="colorSpaceTo">
+                            <option value="Hsl">HSL</option>
+                            <option value="Lch">LCH</option>
+                            <option value="Hsv">HSV</option>
+                            <option value="Hsluv">HSLuv</option>
+                        </select>
+                    </div>
+                    <button id="convertColorSpace">转换色彩空间</button>
+                    <button id="clearColorSpace" class="secondary">清除转换</button>
+                </div>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="mainCanvas" width="800" height="600"></canvas>
+                <div class="layer-info" id="layerInfo">
+                    <h3>图层信息</h3>
+                    <p>请选择一个图层查看详细信息</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import init, { LayerStack, Layer, ColorSpace, BlendMode } from './pkg/photon_wasm.js';
+
+        let layerStack = null;
+        let selectedLayerId = null;
+        let mainCanvas = null;
+        let ctx = null;
+
+        // 透视变换控制点位置
+        let perspectivePoints = {
+            tl: { x: 0, y: 0 },
+            tr: { x: 100, y: 0 },
+            bl: { x: 0, y: 100 },
+            br: { x: 100, y: 100 }
+        };
+        let draggingCorner = null;
+
+        async function initApp() {
+            await init();
+            
+            mainCanvas = document.getElementById('mainCanvas');
+            ctx = mainCanvas.getContext('2d');
+            
+            // 创建图层堆栈
+            layerStack = new LayerStack(800, 600);
+            
+            // 创建背景图层
+            createTestLayer('背景图层', 0);
+            createTestLayer('测试图层1', 100);
+            createTestLayer('测试图层2', 200);
+            
+            updateLayerSelect();
+            render();
+            setupEventListeners();
+        }
+
+        function createTestLayer(name, offsetX) {
+            const pixels = new Uint8Array(800 * 600 * 4);
+            
+            // 填充渐变色
+            for (let y = 0; y < 600; y++) {
+                for (let x = 0; x < 800; x++) {
+                    const idx = (y * 800 + x) * 4;
+                    const normalizedX = (x + offsetX) / 800;
+                    const normalizedY = y / 600;
+                    
+                    pixels[idx] = Math.floor(normalizedX * 255);     // R
+                    pixels[idx + 1] = Math.floor(normalizedY * 255); // G
+                    pixels[idx + 2] = Math.floor((1 - normalizedY) * 150 + 50); // B
+                    pixels[idx + 3] = 255; // A
+                }
+            }
+            
+            // 使用 add_layer_from_pixels 直接创建带像素数据的图层
+            const layerId = layerStack.add_layer_from_pixels(pixels, name);
+            
+            // 设置图层位置
+            layerStack.set_layer_position(layerId, offsetX - 100, 0);
+            
+            return layerId;
+        }
+
+        function updateLayerSelect() {
+            const select = document.getElementById('layerSelect');
+            const layerIds = layerStack.get_layer_ids();
+            const layerNames = layerStack.get_layer_names();
+            
+            select.innerHTML = '';
+            layerIds.forEach((id, index) => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = `${layerNames[index]} (ID: ${id})`;
+                select.appendChild(option);
+            });
+            
+            if (layerIds.length > 0 && !selectedLayerId) {
+                selectedLayerId = layerIds[0];
+                select.value = selectedLayerId;
+                updateLayerInfo();
+            }
+        }
+
+        function getSelectedLayer() {
+            if (!selectedLayerId) return null;
+            return layerStack.get_layer(selectedLayerId);
+        }
+
+        function updateLayerInfo() {
+            const layer = getSelectedLayer();
+            if (!layer) return;
+            
+            const info = document.getElementById('layerInfo');
+            info.innerHTML = `
+                <h3>图层信息</h3>
+                <p><strong>ID:</strong> ${layer.id}</p>
+                <p><strong>名称:</strong> ${layer.name}</p>
+                <p><strong>尺寸:</strong> ${layer.width} x ${layer.height}</p>
+                <p><strong>位置:</strong> (${layer.positionX.toFixed(1)}, ${layer.positionY.toFixed(1)})</p>
+                <p><strong>缩放:</strong> (${layer.scaleX.toFixed(2)}, ${layer.scaleY.toFixed(2)})</p>
+                <p><strong>旋转:</strong> ${layer.rotation.toFixed(1)}°</p>
+                <p><strong>智能对象:</strong> ${layer.smartObject ? '是' : '否'}</p>
+                <p><strong>透视变换:</strong> ${layer.perspectiveEnabled ? '启用' : '禁用'}</p>
+            `;
+            
+            // 更新控件状态
+            document.getElementById('smartObjectToggle').checked = layer.smartObject;
+            document.getElementById('perspectiveEnabled').checked = layer.perspectiveEnabled;
+            
+            // 更新透视控制点
+            if (layer.perspectiveEnabled) {
+                const points = layer.get_perspective_points();
+                updatePerspectiveCorners(points);
+            }
+        }
+
+        function updatePerspectiveCorners(points) {
+            perspectivePoints.tl = { x: points[0] * 100, y: points[1] * 100 };
+            perspectivePoints.tr = { x: points[2] * 100, y: points[3] * 100 };
+            perspectivePoints.bl = { x: points[4] * 100, y: points[5] * 100 };
+            perspectivePoints.br = { x: points[6] * 100, y: points[7] * 100 };
+            
+            document.getElementById('cornerTL').style.left = perspectivePoints.tl.x + '%';
+            document.getElementById('cornerTL').style.top = perspectivePoints.tl.y + '%';
+            document.getElementById('cornerTR').style.left = perspectivePoints.tr.x + '%';
+            document.getElementById('cornerTR').style.top = perspectivePoints.tr.y + '%';
+            document.getElementById('cornerBL').style.left = perspectivePoints.bl.x + '%';
+            document.getElementById('cornerBL').style.top = perspectivePoints.bl.y + '%';
+            document.getElementById('cornerBR').style.left = perspectivePoints.br.x + '%';
+            document.getElementById('cornerBR').style.top = perspectivePoints.br.y + '%';
+        }
+
+        function render() {
+            const composite = layerStack.render_composite();
+            const imageData = ctx.createImageData(800, 600);
+            const pixels = composite.get_raw_pixels(); // 使用 get_raw_pixels() 获取原始像素数据
+            imageData.data.set(pixels);
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function setupEventListeners() {
+            // 图层选择
+            document.getElementById('layerSelect').addEventListener('change', (e) => {
+                selectedLayerId = parseInt(e.target.value);
+                updateLayerInfo();
+            });
+
+            // 智能对象切换
+            document.getElementById('smartObjectToggle').addEventListener('change', (e) => {
+                if (selectedLayerId) {
+                    layerStack.set_layer_smart_object(selectedLayerId, e.target.checked);
+                    updateLayerInfo();
+                }
+            });
+
+            // 重置智能对象
+            document.getElementById('resetSmartObject').addEventListener('click', () => {
+                const layer = getSelectedLayer();
+                if (layer) {
+                    layer.reset_smart_object();
+                    render();
+                    updateLayerInfo();
+                }
+            });
+
+            // 更新原始图像
+            document.getElementById('updateOriginal').addEventListener('click', () => {
+                const layer = getSelectedLayer();
+                if (layer) {
+                    layer.update_smart_object_original();
+                    alert('原始图像已更新');
+                }
+            });
+
+            // 噪点强度滑块
+            document.getElementById('noiseStrength').addEventListener('input', (e) => {
+                document.getElementById('noiseStrengthValue').textContent = e.target.value;
+            });
+
+            // 噪点类型选择
+            document.getElementById('noiseType').addEventListener('change', (e) => {
+                const colorControls = document.getElementById('colorNoiseControls');
+                colorControls.style.display = e.target.value === 'color' ? 'block' : 'none';
+            });
+
+            // RGB 因子滑块
+            ['rFactor', 'gFactor', 'bFactor'].forEach(factor => {
+                document.getElementById(factor).addEventListener('input', (e) => {
+                    document.getElementById(factor + 'Value').textContent = e.target.value;
+                });
+            });
+
+            // 应用噪点
+            document.getElementById('applyNoise').addEventListener('click', () => {
+                if (!selectedLayerId) return;
+                
+                const noiseType = document.getElementById('noiseType').value;
+                const strength = parseFloat(document.getElementById('noiseStrength').value) / 50; // 调整为 0-2 的范围
+                
+                // 获取图层的可变引用
+                const layer = layerStack.get_layer(selectedLayerId);
+                if (!layer) return;
+                
+                let result = false;
+                switch (noiseType) {
+                    case 'random':
+                        result = layer.apply_noise(strength);
+                        break;
+                    case 'color':
+                        const r = parseFloat(document.getElementById('rFactor').value);
+                        const g = parseFloat(document.getElementById('gFactor').value);
+                        const b = parseFloat(document.getElementById('bFactor').value);
+                        result = layer.apply_color_noise(r, g, b, strength);
+                        break;
+                    case 'pink':
+                        result = layer.apply_pink_noise();
+                        break;
+                }
+                
+                if (result) {
+                    // 将修改后的图层设置回 LayerStack
+                    layerStack.set_layer_pixels(selectedLayerId, layer.get_pixels());
+                    render();
+                }
+            });
+
+            // 清除噪点
+            document.getElementById('clearNoise').addEventListener('click', () => {
+                if (!selectedLayerId) return;
+                
+                const layer = layerStack.get_layer(selectedLayerId);
+                if (layer && layer.clear_noise()) {
+                    layerStack.set_layer_pixels(selectedLayerId, layer.get_pixels());
+                    render();
+                }
+            });
+
+            // 明度滑块
+            document.getElementById('lightness').addEventListener('input', (e) => {
+                document.getElementById('lightnessValue').textContent = e.target.value;
+            });
+
+            // 应用明度调整
+            document.getElementById('applyLightness').addEventListener('click', () => {
+                if (!selectedLayerId) return;
+                
+                const level = parseFloat(document.getElementById('lightness').value) / 50; // 调整为 -2 到 2 的范围
+                const colorSpaceStr = document.getElementById('colorSpace').value;
+                const colorSpace = ColorSpace[colorSpaceStr];
+                
+                // 获取图层的可变引用
+                const layer = layerStack.get_layer(selectedLayerId);
+                if (!layer) return;
+                
+                if (layer.adjust_lightness(level, colorSpace)) {
+                    // 将修改后的图层设置回 LayerStack
+                    layerStack.set_layer_pixels(selectedLayerId, layer.get_pixels());
+                    render();
+                }
+            });
+
+            // 清除明度调整
+            document.getElementById('clearLightness').addEventListener('click', () => {
+                if (!selectedLayerId) return;
+                
+                const layer = layerStack.get_layer(selectedLayerId);
+                if (layer && layer.clear_lightness()) {
+                    layerStack.set_layer_pixels(selectedLayerId, layer.get_pixels());
+                    render();
+                }
+            });
+
+            // 透视变换启用
+            document.getElementById('perspectiveEnabled').addEventListener('change', (e) => {
+                if (selectedLayerId) {
+                    layerStack.set_layer_perspective_enabled(selectedLayerId, e.target.checked);
+                    updateLayerInfo();
+                    render();
+                }
+            });
+
+            // 重置透视
+            document.getElementById('resetPerspective').addEventListener('click', () => {
+                if (selectedLayerId) {
+                    layerStack.reset_layer_perspective(selectedLayerId);
+                    updatePerspectiveCorners([0, 0, 100, 0, 0, 100, 100, 100]);
+                    updateLayerInfo();
+                    render();
+                }
+            });
+
+            // 透视控制点拖拽
+            const visualizer = document.getElementById('perspectiveVisualizer');
+            const corners = {
+                'cornerTL': 'tl',
+                'cornerTR': 'tr',
+                'cornerBL': 'bl',
+                'cornerBR': 'br'
+            };
+
+            Object.entries(corners).forEach(([elementId, pointKey]) => {
+                const corner = document.getElementById(elementId);
+                
+                corner.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    draggingCorner = pointKey;
+                });
+            });
+
+            visualizer.addEventListener('mousemove', (e) => {
+                if (!draggingCorner) return;
+                
+                const rect = visualizer.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                
+                perspectivePoints[draggingCorner] = {
+                    x: Math.max(0, Math.min(100, x)),
+                    y: Math.max(0, Math.min(100, y))
+                };
+                
+                // 更新视觉
+                document.getElementById(Object.keys(corners).find(key => corners[key] === draggingCorner))
+                    .style.left = perspectivePoints[draggingCorner].x + '%';
+                document.getElementById(Object.keys(corners).find(key => corners[key] === draggingCorner))
+                    .style.top = perspectivePoints[draggingCorner].y + '%';
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (draggingCorner) {
+                    // 应用透视变换
+                    if (selectedLayerId) {
+                        layerStack.set_layer_perspective_points(
+                            selectedLayerId,
+                            perspectivePoints.tl.x / 100, perspectivePoints.tl.y / 100,
+                            perspectivePoints.tr.x / 100, perspectivePoints.tr.y / 100,
+                            perspectivePoints.bl.x / 100, perspectivePoints.bl.y / 100,
+                            perspectivePoints.br.x / 100, perspectivePoints.br.y / 100
+                        );
+                        render();
+                    }
+                    draggingCorner = null;
+                }
+            });
+
+            // 转换色彩空间
+            document.getElementById('convertColorSpace').addEventListener('click', () => {
+                const layer = getSelectedLayer();
+                if (!layer) return;
+                
+                const fromStr = document.getElementById('colorSpaceFrom').value;
+                const toStr = document.getElementById('colorSpaceTo').value;
+                const from = ColorSpace[fromStr];
+                const to = ColorSpace[toStr];
+                
+                if (layer.convert_color_space(from, to)) {
+                    render();
+                }
+            });
+
+            // 清除色彩空间转换
+            document.getElementById('clearColorSpace').addEventListener('click', () => {
+                const layer = getSelectedLayer();
+                if (layer && layer.clear_color_space_conversion()) {
+                    render();
+                }
+            });
+        }
+
+        // 启动应用
+        initApp();
+    </script>
+</body>
+</html>

@@ -421,13 +421,57 @@ export class Layer {
     free(): void;
     [Symbol.dispose](): void;
     /**
+     * 调整图层明度
+     */
+    adjust_lightness(level: number, color_space: ColorSpace): boolean;
+    /**
+     * 添加彩色噪点到图层
+     */
+    apply_color_noise(r_factor: number, g_factor: number, b_factor: number, strength: number): boolean;
+    /**
+     * 添加噪点到图层
+     */
+    apply_noise(strength: number): boolean;
+    /**
+     * 添加粉色噪点到图层
+     */
+    apply_pink_noise(): boolean;
+    /**
+     * 清除色彩空间转换
+     */
+    clear_color_space_conversion(): boolean;
+    /**
+     * 清除明度调整
+     */
+    clear_lightness(): boolean;
+    /**
+     * 清除噪点效果
+     */
+    clear_noise(): boolean;
+    /**
      * 清除外部变换中心，恢复使用origin
      */
     clear_transform_center(): void;
     /**
+     * 转换图层色彩空间
+     */
+    convert_color_space(from: ColorSpace, to: ColorSpace): boolean;
+    /**
+     * 获取透视变换的四个角点
+     */
+    get_perspective_points(): Float32Array;
+    /**
      * 获取图层的像素数据
      */
     get_pixels(): Uint8Array;
+    /**
+     * 重置透视变换为默认状态
+     */
+    reset_perspective(): void;
+    /**
+     * 重置智能对象到原始状态
+     */
+    reset_smart_object(): boolean;
     /**
      * 重置所有变换为默认值
      */
@@ -436,6 +480,10 @@ export class Layer {
      * 设置变换原点
      */
     set_origin(origin_x: number, origin_y: number): void;
+    /**
+     * 设置透视变换的四个角点（相对坐标 0-1）
+     */
+    set_perspective_points(top_left_x: number, top_left_y: number, top_right_x: number, top_right_y: number, bottom_left_x: number, bottom_left_y: number, bottom_right_x: number, bottom_right_y: number): void;
     /**
      * 设置图层的像素数据
      */
@@ -452,6 +500,10 @@ export class Layer {
      * 设置外部变换中心（画布坐标系）
      */
     set_transform_center(center_x?: number | null, center_y?: number | null): void;
+    /**
+     * 更新智能对象的原始图像（在编辑内容后调用）
+     */
+    update_smart_object_original(): boolean;
     /**
      * 获取混合模式
      */
@@ -493,6 +545,10 @@ export class Layer {
      */
     originY: number;
     /**
+     * 获取是否启用透视变换
+     */
+    perspectiveEnabled: boolean;
+    /**
      * 获取位置 X
      */
     positionX: number;
@@ -512,6 +568,10 @@ export class Layer {
      * 获取缩放 Y
      */
     scaleY: number;
+    /**
+     * 获取是否为智能对象
+     */
+    smartObject: boolean;
     /**
      * 获取外部变换中心 X（画布坐标系）
      */
@@ -626,6 +686,11 @@ export class LayerStack {
      */
     get_layer_visibility(): Uint8Array;
     /**
+     * 增量渲染：只重新渲染脏区域
+     * 如果没有脏区域，返回缓存的图像
+     */
+    incremental_render(): PhotonImage;
+    /**
      * 向下合并图层
      * 将指定图层与其下方的图层合并
      */
@@ -653,9 +718,17 @@ export class LayerStack {
      */
     render_composite(): PhotonImage;
     /**
+     * 重置图层透视变换
+     */
+    reset_layer_perspective(id: number): boolean;
+    /**
      * 设置背景颜色
      */
     set_background_color(r: number, g: number, b: number, a: number): void;
+    /**
+     * 设置是否启用增量渲染
+     */
+    set_incremental_rendering(enabled: boolean): void;
     /**
      * 设置图层混合模式
      */
@@ -669,6 +742,18 @@ export class LayerStack {
      */
     set_layer_opacity(id: number, opacity: number): boolean;
     /**
+     * 设置图层透视变换是否启用
+     */
+    set_layer_perspective_enabled(id: number, enabled: boolean): boolean;
+    /**
+     * 设置图层透视变换的四个角点
+     */
+    set_layer_perspective_points(id: number, top_left_x: number, top_left_y: number, top_right_x: number, top_right_y: number, bottom_left_x: number, bottom_left_y: number, bottom_right_x: number, bottom_right_y: number): boolean;
+    /**
+     * 设置图层的像素数据
+     */
+    set_layer_pixels(id: number, pixels: Uint8Array): boolean;
+    /**
      * 设置图层位置
      */
     set_layer_position(id: number, x: number, y: number): boolean;
@@ -680,6 +765,10 @@ export class LayerStack {
      * 设置图层缩放
      */
     set_layer_scale(id: number, scale_x: number, scale_y: number): boolean;
+    /**
+     * 设置图层是否为智能对象
+     */
+    set_layer_smart_object(id: number, smart_object: boolean): boolean;
     /**
      * 设置图层可见性
      */
@@ -708,6 +797,10 @@ export class LayerStack {
      * 获取画布宽度
      */
     readonly canvas_width: number;
+    /**
+     * 获取是否启用增量渲染
+     */
+    readonly incrementalEnabled: boolean;
     /**
      * 获取图层数量
      */
@@ -4991,10 +5084,19 @@ export interface InitOutput {
     readonly imageprocessor_undo_stroke: (a: number) => number;
     readonly init: () => void;
     readonly init_thread_pool: (a: number) => number;
+    readonly layer_adjust_lightness: (a: number, b: number, c: number) => number;
+    readonly layer_apply_color_noise: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly layer_apply_noise: (a: number, b: number) => number;
+    readonly layer_apply_pink_noise: (a: number) => number;
     readonly layer_blend_mode: (a: number) => number;
+    readonly layer_clear_color_space_conversion: (a: number) => number;
+    readonly layer_clear_lightness: (a: number) => number;
+    readonly layer_clear_noise: (a: number) => number;
     readonly layer_clear_transform_center: (a: number) => void;
+    readonly layer_convert_color_space: (a: number, b: number, c: number) => number;
     readonly layer_flip_horizontal: (a: number) => number;
     readonly layer_flip_vertical: (a: number) => number;
+    readonly layer_get_perspective_points: (a: number, b: number) => void;
     readonly layer_get_pixels: (a: number, b: number) => void;
     readonly layer_height: (a: number) => number;
     readonly layer_id: (a: number) => number;
@@ -5003,8 +5105,11 @@ export interface InitOutput {
     readonly layer_opacity: (a: number) => number;
     readonly layer_origin_x: (a: number) => number;
     readonly layer_origin_y: (a: number) => number;
+    readonly layer_perspective_enabled: (a: number) => number;
     readonly layer_position_x: (a: number) => number;
     readonly layer_position_y: (a: number) => number;
+    readonly layer_reset_perspective: (a: number) => void;
+    readonly layer_reset_smart_object: (a: number) => number;
     readonly layer_reset_transform: (a: number) => void;
     readonly layer_rotation_degrees: (a: number) => number;
     readonly layer_scale_x: (a: number) => number;
@@ -5018,6 +5123,8 @@ export interface InitOutput {
     readonly layer_set_origin: (a: number, b: number, c: number) => void;
     readonly layer_set_origin_x: (a: number, b: number) => void;
     readonly layer_set_origin_y: (a: number, b: number) => void;
+    readonly layer_set_perspective_enabled: (a: number, b: number) => void;
+    readonly layer_set_perspective_points: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => void;
     readonly layer_set_pixels: (a: number, b: number, c: number) => void;
     readonly layer_set_position: (a: number, b: number, c: number) => void;
     readonly layer_set_position_x: (a: number, b: number) => void;
@@ -5026,12 +5133,15 @@ export interface InitOutput {
     readonly layer_set_scale: (a: number, b: number) => void;
     readonly layer_set_scale_x: (a: number, b: number) => void;
     readonly layer_set_scale_y: (a: number, b: number) => void;
+    readonly layer_set_smart_object: (a: number, b: number) => void;
     readonly layer_set_transform_center: (a: number, b: number, c: number) => void;
     readonly layer_set_transform_center_x: (a: number, b: number) => void;
     readonly layer_set_transform_center_y: (a: number, b: number) => void;
     readonly layer_set_visible: (a: number, b: number) => void;
+    readonly layer_smart_object: (a: number) => number;
     readonly layer_transform_center_x: (a: number) => number;
     readonly layer_transform_center_y: (a: number) => number;
+    readonly layer_update_smart_object_original: (a: number) => number;
     readonly layer_visible: (a: number) => number;
     readonly layer_width: (a: number) => number;
     readonly layerstack_add_layer: (a: number, b: number, c: number) => number;
@@ -5057,6 +5167,8 @@ export interface InitOutput {
     readonly layerstack_get_layer_opacities: (a: number, b: number) => void;
     readonly layerstack_get_layer_transform_info: (a: number, b: number, c: number) => void;
     readonly layerstack_get_layer_visibility: (a: number, b: number) => void;
+    readonly layerstack_incremental_enabled: (a: number) => number;
+    readonly layerstack_incremental_render: (a: number) => number;
     readonly layerstack_layer_count: (a: number) => number;
     readonly layerstack_merge_down: (a: number, b: number) => number;
     readonly layerstack_move_layer: (a: number, b: number, c: number) => number;
@@ -5064,13 +5176,19 @@ export interface InitOutput {
     readonly layerstack_remove_layer: (a: number, b: number) => number;
     readonly layerstack_remove_layer_by_index: (a: number, b: number) => number;
     readonly layerstack_render_composite: (a: number) => number;
+    readonly layerstack_reset_layer_perspective: (a: number, b: number) => number;
     readonly layerstack_set_background_color: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly layerstack_set_incremental_rendering: (a: number, b: number) => void;
     readonly layerstack_set_layer_blend_mode: (a: number, b: number, c: number) => number;
     readonly layerstack_set_layer_flip: (a: number, b: number, c: number, d: number) => number;
     readonly layerstack_set_layer_opacity: (a: number, b: number, c: number) => number;
+    readonly layerstack_set_layer_perspective_enabled: (a: number, b: number, c: number) => number;
+    readonly layerstack_set_layer_perspective_points: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => number;
+    readonly layerstack_set_layer_pixels: (a: number, b: number, c: number, d: number) => number;
     readonly layerstack_set_layer_position: (a: number, b: number, c: number, d: number) => number;
     readonly layerstack_set_layer_rotation: (a: number, b: number, c: number) => number;
     readonly layerstack_set_layer_scale: (a: number, b: number, c: number, d: number) => number;
+    readonly layerstack_set_layer_smart_object: (a: number, b: number, c: number) => number;
     readonly layerstack_set_layer_visible: (a: number, b: number, c: number) => number;
     readonly layerstack_set_transform_center_on_canvas: (a: number, b: number, c: number, d: number) => number;
     readonly layerstack_set_transform_reference_layer: (a: number, b: number, c: number) => number;
@@ -5331,12 +5449,12 @@ export interface InitOutput {
     readonly wbg_rayon_poolbuilder_numThreads: (a: number) => number;
     readonly wbg_rayon_poolbuilder_receiver: (a: number) => number;
     readonly wbg_rayon_start_worker: (a: number) => void;
-    readonly __wasm_bindgen_func_elem_1048: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_1828: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_1831: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2457: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1049: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1829: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1102: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_1882: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_1885: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2510: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1103: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1883: (a: number, b: number, c: number) => void;
     readonly memory: WebAssembly.Memory;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;

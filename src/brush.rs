@@ -421,6 +421,19 @@ impl BrushRenderer {
             BlendMode::Exclusion => tiny_skia::BlendMode::Exclusion,
             BlendMode::Lighten => tiny_skia::BlendMode::Lighten,
             BlendMode::Darken => tiny_skia::BlendMode::Darken,
+            // 对于 tiny_skia 不支持的混合模式，使用 SourceOver
+            BlendMode::ColorDodge => tiny_skia::BlendMode::SourceOver,
+            BlendMode::ColorBurn => tiny_skia::BlendMode::SourceOver,
+            BlendMode::LinearDodge => tiny_skia::BlendMode::SourceOver,
+            BlendMode::LinearBurn => tiny_skia::BlendMode::SourceOver,
+            BlendMode::VividLight => tiny_skia::BlendMode::SourceOver,
+            BlendMode::LinearLight => tiny_skia::BlendMode::SourceOver,
+            BlendMode::PinLight => tiny_skia::BlendMode::SourceOver,
+            BlendMode::HardMix => tiny_skia::BlendMode::SourceOver,
+            BlendMode::Hue => tiny_skia::BlendMode::SourceOver,
+            BlendMode::Saturation => tiny_skia::BlendMode::SourceOver,
+            BlendMode::Color => tiny_skia::BlendMode::SourceOver,
+            BlendMode::Luminosity => tiny_skia::BlendMode::SourceOver,
         }
     }
 }
