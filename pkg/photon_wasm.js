@@ -494,6 +494,34 @@ export class ImageProcessor {
         wasm.imageprocessor_add_stroke_point(this.__wbg_ptr, x, y, pressure);
     }
     /**
+     * 高光压制
+     *
+     * # 参数
+     * * `amount` - 压制强度，-100 到 100，负值压暗高光，正值提亮高光
+     * @param {number} amount
+     */
+    adjust_highlights(amount) {
+        wasm.imageprocessor_adjust_highlights(this.__wbg_ptr, amount);
+    }
+    /**
+     * 色阶调节
+     *
+     * # 参数
+     * * `input_black` - 输入黑点 (0-255)
+     * * `input_white` - 输入白点 (0-255)
+     * * `input_gray` - 输入灰点 (0-255)
+     * * `output_black` - 输出黑点 (0-255)
+     * * `output_white` - 输出白点 (0-255)
+     * @param {number} input_black
+     * @param {number} input_white
+     * @param {number} input_gray
+     * @param {number} output_black
+     * @param {number} output_white
+     */
+    adjust_levels(input_black, input_white, input_gray, output_black, output_white) {
+        wasm.imageprocessor_adjust_levels(this.__wbg_ptr, input_black, input_white, input_gray, output_black, output_white);
+    }
+    /**
      * @param {number} level
      */
     adjust_lightness(level) {
@@ -504,6 +532,26 @@ export class ImageProcessor {
      */
     adjust_saturation(level) {
         wasm.imageprocessor_adjust_saturation(this.__wbg_ptr, level);
+    }
+    /**
+     * 阴影提亮
+     *
+     * # 参数
+     * * `amount` - 提亮强度，-100 到 100，负值压暗阴影，正值提亮阴影
+     * @param {number} amount
+     */
+    adjust_shadows(amount) {
+        wasm.imageprocessor_adjust_shadows(this.__wbg_ptr, amount);
+    }
+    /**
+     * 色温调节
+     *
+     * # 参数
+     * * `value` - 色温值，-100 到 100，负值为冷色，正值为暖色
+     * @param {number} value
+     */
+    adjust_temperature(value) {
+        wasm.imageprocessor_adjust_temperature(this.__wbg_ptr, value);
     }
     /**
      * @param {number} amt
@@ -758,6 +806,20 @@ export class ImageProcessor {
     apply_primary() {
         wasm.imageprocessor_apply_primary(this.__wbg_ptr);
     }
+    /**
+     * RGB 曲线调节
+     *
+     * # 参数
+     * * `r_curve` - 红色曲线控制点数组，格式为 [输入值, 输出值, ...] (0-255)
+     * * `g_curve` - 绿色曲线控制点数组，格式为 [输入值, 输出值, ...] (0-255)
+     * * `b_curve` - 蓝色曲线控制点数组，格式为 [输入值, 输出值, ...] (0-255)
+     * @param {Uint8Array} r_curve
+     * @param {Uint8Array} g_curve
+     * @param {Uint8Array} b_curve
+     */
+    apply_rgb_curve(r_curve, g_curve, b_curve) {
+        wasm.imageprocessor_apply_rgb_curve(this.__wbg_ptr, addHeapObject(r_curve), addHeapObject(g_curve), addHeapObject(b_curve));
+    }
     apply_ryo() {
         wasm.imageprocessor_apply_ryo(this.__wbg_ptr);
     }
@@ -811,6 +873,18 @@ export class ImageProcessor {
      */
     apply_tint(r, g, b) {
         wasm.imageprocessor_apply_tint(this.__wbg_ptr, r, g, b);
+    }
+    /**
+     * 暗角效果
+     *
+     * # 参数
+     * * `intensity` - 暗角强度，0.0 到 1.0
+     * * `radius` - 暗角范围，0.0 到 1.0，1.0 表示覆盖整个图像
+     * @param {number} intensity
+     * @param {number} radius
+     */
+    apply_vignette(intensity, radius) {
+        wasm.imageprocessor_apply_vignette(this.__wbg_ptr, intensity, radius);
     }
     /**
      * @param {Uint8Array} watermark_bytes
@@ -8543,6 +8617,10 @@ function __wbg_get_imports(memory) {
             const ret = getObject(arg0)[arg1 >>> 0];
             return ret;
         },
+        __wbg_get_index_9347cc7ce8c79b9e: function(arg0, arg1) {
+            const ret = getObject(arg0)[arg1 >>> 0];
+            return ret;
+        },
         __wbg_height_21ecb9dcc0472f5d: function(arg0) {
             const ret = getObject(arg0).height;
             return ret;
@@ -8658,7 +8736,7 @@ function __wbg_get_imports(memory) {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_2510(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_2535(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -8688,7 +8766,7 @@ function __wbg_get_imports(memory) {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_2510(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_2535(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -8850,17 +8928,17 @@ function __wbg_get_imports(memory) {
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { dtor_idx: 243, function: Function { arguments: [Externref], shim_idx: 244, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1102, __wasm_bindgen_func_elem_1103);
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1126, __wasm_bindgen_func_elem_1127);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { dtor_idx: 395, function: Function { arguments: [Externref], shim_idx: 398, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1882, __wasm_bindgen_func_elem_1885);
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1907, __wasm_bindgen_func_elem_1910);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000003: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { dtor_idx: 395, function: Function { arguments: [NamedExternref("MessageEvent")], shim_idx: 396, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1882, __wasm_bindgen_func_elem_1883);
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1907, __wasm_bindgen_func_elem_1908);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000004: function(arg0) {
@@ -8919,18 +8997,18 @@ function __wbg_get_imports(memory) {
     };
 }
 
-function __wasm_bindgen_func_elem_1103(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1103(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1127(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1127(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_1883(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1883(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1908(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1908(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_1885(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_1910(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_1885(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_1910(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -8941,8 +9019,8 @@ function __wasm_bindgen_func_elem_1885(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_2510(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_2510(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_2535(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_2535(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 const BrushConfigFinalization = (typeof FinalizationRegistry === 'undefined')

@@ -1516,6 +1516,143 @@ impl ImageProcessor {
         self.image = processor.image;
     }
 
+    // ==================== 高优先级图像处理功能 ====================
+
+    /// 色温调节
+    ///
+    /// # 参数
+    /// * `value` - 色温值，-100 到 100，负值为冷色，正值为暖色
+    pub fn adjust_temperature(&mut self, value: i32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.adjust_temperature(value);
+        self.image = processor.image;
+    }
+
+    /// 色阶调节
+    ///
+    /// # 参数
+    /// * `input_black` - 输入黑点 (0-255)
+    /// * `input_white` - 输入白点 (0-255)
+    /// * `input_gray` - 输入灰点 (0-255)
+    /// * `output_black` - 输出黑点 (0-255)
+    /// * `output_white` - 输出白点 (0-255)
+    pub fn adjust_levels(
+        &mut self,
+        input_black: u8,
+        input_white: u8,
+        input_gray: u8,
+        output_black: u8,
+        output_white: u8,
+    ) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.adjust_levels(input_black, input_white, input_gray, output_black, output_white);
+        self.image = processor.image;
+    }
+
+    /// RGB 曲线调节
+    ///
+    /// # 参数
+    /// * `r_curve` - 红色曲线控制点数组，格式为 [输入值, 输出值, ...] (0-255)
+    /// * `g_curve` - 绿色曲线控制点数组，格式为 [输入值, 输出值, ...] (0-255)
+    /// * `b_curve` - 蓝色曲线控制点数组，格式为 [输入值, 输出值, ...] (0-255)
+    pub fn apply_rgb_curve(&mut self, r_curve: js_sys::Uint8Array, g_curve: js_sys::Uint8Array, b_curve: js_sys::Uint8Array) {
+        let r_len = r_curve.length() as usize;
+        let g_len = g_curve.length() as usize;
+        let b_len = b_curve.length() as usize;
+
+        // 确保每两个值组成一个点对
+        if r_len % 2 != 0 || g_len % 2 != 0 || b_len % 2 != 0 {
+            return;
+        }
+
+        let mut r_points = Vec::with_capacity(r_len / 2);
+        let mut g_points = Vec::with_capacity(g_len / 2);
+        let mut b_points = Vec::with_capacity(b_len / 2);
+
+        for i in (0..r_len).step_by(2) {
+            r_points.push((r_curve.get_index(i as u32), r_curve.get_index(i as u32 + 1)));
+        }
+
+        for i in (0..g_len).step_by(2) {
+            g_points.push((g_curve.get_index(i as u32), g_curve.get_index(i as u32 + 1)));
+        }
+
+        for i in (0..b_len).step_by(2) {
+            b_points.push((b_curve.get_index(i as u32), b_curve.get_index(i as u32 + 1)));
+        }
+
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_rgb_curve(&r_points, &g_points, &b_points);
+        self.image = processor.image;
+    }
+
+    /// 高光压制
+    ///
+    /// # 参数
+    /// * `amount` - 压制强度，-100 到 100，负值压暗高光，正值提亮高光
+    pub fn adjust_highlights(&mut self, amount: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.adjust_highlights(amount);
+        self.image = processor.image;
+    }
+
+    /// 阴影提亮
+    ///
+    /// # 参数
+    /// * `amount` - 提亮强度，-100 到 100，负值压暗阴影，正值提亮阴影
+    pub fn adjust_shadows(&mut self, amount: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.adjust_shadows(amount);
+        self.image = processor.image;
+    }
+
+    /// 暗角效果
+    ///
+    /// # 参数
+    /// * `intensity` - 暗角强度，0.0 到 1.0
+    /// * `radius` - 暗角范围，0.0 到 1.0，1.0 表示覆盖整个图像
+    pub fn apply_vignette(&mut self, intensity: f32, radius: f32) {
+        let mut processor = image_operations::ImageProcessor {
+            image: self.image.clone(),
+            original_image: self.original_image.clone(),
+            original_bytes: self.original_bytes.clone(),
+            width: self.width,
+            height: self.height,
+        };
+        processor.apply_vignette(intensity, radius);
+        self.image = processor.image;
+    }
+
     // ==================== 笔刷功能 ====================
 
     /// 开始一笔新画

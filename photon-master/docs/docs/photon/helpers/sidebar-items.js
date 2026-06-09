@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["dyn_image_from_raw","Convert a PhotonImage to a DynamicImage type (struct used by the `image` crate)"],["get_pixels","Get raw pixels (as a vec of u8s) from a DynamicImage"],["open_dyn_image",""],["save_dyn_image","Save a DynamicImage to a path. "],["square_distance","Gets the square distance between two colours"]]});

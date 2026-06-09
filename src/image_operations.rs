@@ -1,5 +1,5 @@
 use crate::types::ColorSpace;
-use photon_rs::{PhotonImage, filters, native, monochrome, transform, effects, colour_spaces, text};
+use photon_rs::{PhotonImage, filters, native, monochrome, transform, effects, colour_spaces, text, channels};
 use base64::Engine;
 
 /// 图像处理器 - 处理图像的各种操作
@@ -191,15 +191,15 @@ impl ImageProcessor {
     // ==================== 图像滤镜 ====================
 
     pub fn apply_grayscale(&mut self) {
-        filters::filter(&mut self.image, "grayscale");
+        monochrome::grayscale(&mut self.image);
     }
 
     pub fn apply_sepia(&mut self) {
-        filters::filter(&mut self.image, "sepia");
+        monochrome::sepia(&mut self.image);
     }
 
     pub fn apply_invert(&mut self) {
-        filters::filter(&mut self.image, "invert");
+        channels::invert(&mut self.image);
     }
 
     pub fn apply_threshold(&mut self, threshold: u32) {
@@ -1003,7 +1003,7 @@ impl ImageProcessor {
 
     pub fn smart_crop(&mut self, threshold: u8, feather_radius: f32) {
         use crate::edge_refinement::apply_mask_to_image;
-        
+
         let mut mask = vec![0u8; (self.width * self.height) as usize];
 
         let image_bytes = self.image.get_raw_pixels();
@@ -1031,5 +1031,282 @@ impl ImageProcessor {
         apply_mask_to_image(&mut image_bytes, &mask, self.width, self.height);
 
         self.image = PhotonImage::new(image_bytes, self.width, self.height);
+    }
+
+    // ==================== 高优先级图像处理功能 ====================
+
+    /// 色温调节
+    /// value: -100 到 100，负值为冷色，正值为暖色
+    pub fn adjust_temperature(&mut self, value: i32) {
+        let pixels = self.image.get_raw_pixels();
+        let mut new_pixels = pixels.clone();
+
+        // 色温调整系数：暖色增加红色，减少蓝色；冷色相反
+        let scale = (value as f32 / 100.0) * 50.0;
+
+        for i in (0..new_pixels.len()).step_by(4) {
+            let r = new_pixels[i] as f32;
+            let g = new_pixels[i + 1] as f32;
+            let b = new_pixels[i + 2] as f32;
+
+            // 暖色：增加红色，减少蓝色
+            // 冷色：减少红色，增加蓝色
+            let r_new = (r + scale).clamp(0.0, 255.0);
+            let b_new = (b - scale).clamp(0.0, 255.0);
+
+            new_pixels[i] = r_new as u8;
+            new_pixels[i + 1] = g as u8;
+            new_pixels[i + 2] = b_new as u8;
+        }
+
+        self.image = PhotonImage::new(new_pixels, self.width, self.height);
+    }
+
+    /// 色阶调节
+    /// input_black, input_white: 输入黑点和白点 (0-255)
+    /// input_gray: 输入灰点 (0-255)
+    /// output_black, output_white: 输出黑点和白点 (0-255)
+    pub fn adjust_levels(
+        &mut self,
+        input_black: u8,
+        input_white: u8,
+        input_gray: u8,
+        output_black: u8,
+        output_white: u8,
+    ) {
+        let pixels = self.image.get_raw_pixels();
+        let mut new_pixels = pixels.clone();
+
+        // 防止除零
+        let input_white = input_white.max(input_black + 1);
+
+        // 计算灰点系数
+        let input_mid = input_gray as f32;
+        let output_mid = 128.0_f32;
+        let gamma = if input_mid > 0.0_f32 && input_mid < 255.0_f32 {
+            let output_ratio = output_mid / 255.0_f32;
+            let input_ratio = input_mid / 255.0_f32;
+            (output_ratio.ln() / input_ratio.ln()).max(0.01_f32)
+        } else {
+            1.0_f32
+        };
+
+        let output_range = (output_white - output_black) as f32;
+
+        for i in (0..new_pixels.len()).step_by(4) {
+            for channel in 0..3 {
+                let val = new_pixels[i + channel] as f32;
+
+                // 输入映射
+                let input_normalized = ((val - input_black as f32) / (input_white - input_black) as f32)
+                    .clamp(0.0, 1.0);
+
+                // Gamma 校正
+                let gamma_corrected = input_normalized.powf(1.0 / gamma);
+
+                // 输出映射
+                let output_val = (gamma_corrected * output_range + output_black as f32)
+                    .clamp(0.0, 255.0);
+
+                new_pixels[i + channel] = output_val as u8;
+            }
+        }
+
+        self.image = PhotonImage::new(new_pixels, self.width, self.height);
+    }
+
+    /// RGB 曲线调节
+    /// r_curve, g_curve, b_curve: 曲线控制点数组，每个元素是 (输入值, 输出值) 对 (0-255)
+    pub fn apply_rgb_curve(
+        &mut self,
+        r_curve: &[(u8, u8)],
+        g_curve: &[(u8, u8)],
+        b_curve: &[(u8, u8)],
+    ) {
+        let pixels = self.image.get_raw_pixels();
+        let mut new_pixels = pixels.clone();
+
+        // 创建曲线查找表
+        let create_lut = |curve: &[(u8, u8)]| -> [u8; 256] {
+            let mut lut = [0u8; 256];
+            if curve.is_empty() {
+                for i in 0..256 {
+                    lut[i] = i as u8;
+                }
+                return lut;
+            }
+
+            // 按输入值排序
+            let mut sorted_curve = curve.to_vec();
+            sorted_curve.sort_by_key(|&(x, _)| x);
+
+            // 添加端点
+            let points: Vec<(u8, u8)> = if sorted_curve[0].0 != 0 {
+                let mut p = vec![(0, 0)];
+                p.extend(sorted_curve.iter().copied());
+                p
+            } else {
+                sorted_curve
+            };
+
+            let points: Vec<(u8, u8)> = if points.last().unwrap().0 != 255 {
+                let mut p = points.clone();
+                p.push((255, 255));
+                p
+            } else {
+                points
+            };
+
+            // 插值生成 LUT
+            let mut idx = 0;
+            for i in 0..=255u8 {
+                while idx + 1 < points.len() && points[idx + 1].0 < i {
+                    idx += 1;
+                }
+
+                if idx + 1 >= points.len() {
+                    lut[i as usize] = points[idx].1;
+                } else {
+                    let (x1, y1) = points[idx];
+                    let (x2, y2) = points[idx + 1];
+                    let t = if x2 > x1 {
+                        (i as f32 - x1 as f32) / (x2 - x1) as f32
+                    } else {
+                        0.0
+                    };
+                    lut[i as usize] = (y1 as f32 + t * (y2 - y1) as f32).clamp(0.0, 255.0) as u8;
+                }
+            }
+
+            lut
+        };
+
+        let r_lut = create_lut(r_curve);
+        let g_lut = create_lut(g_curve);
+        let b_lut = create_lut(b_curve);
+
+        for i in (0..new_pixels.len()).step_by(4) {
+            new_pixels[i] = r_lut[new_pixels[i] as usize];
+            new_pixels[i + 1] = g_lut[new_pixels[i + 1] as usize];
+            new_pixels[i + 2] = b_lut[new_pixels[i + 2] as usize];
+        }
+
+        self.image = PhotonImage::new(new_pixels, self.width, self.height);
+    }
+
+    /// 高光压制
+    /// amount: 压制强度，-100 到 100，负值压暗高光，正值提亮高光
+    pub fn adjust_highlights(&mut self, amount: f32) {
+        let pixels = self.image.get_raw_pixels();
+        let mut new_pixels = pixels.clone();
+
+        let adjustment = amount / 100.0;
+
+        for i in (0..new_pixels.len()).step_by(4) {
+            let r = new_pixels[i] as f32;
+            let g = new_pixels[i + 1] as f32;
+            let b = new_pixels[i + 2] as f32;
+
+            // 计算亮度
+            let luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
+
+            // 高光区域：亮度 > 0.5
+            if luminance > 0.5 {
+                // 根据亮度计算调整系数，高光部分调整更大
+                let highlight_factor = (luminance - 0.5) * 2.0; // 0.0 to 1.0
+                let factor = 1.0 - (adjustment * highlight_factor);
+
+                let r_new = (r * factor).clamp(0.0, 255.0);
+                let g_new = (g * factor).clamp(0.0, 255.0);
+                let b_new = (b * factor).clamp(0.0, 255.0);
+
+                new_pixels[i] = r_new as u8;
+                new_pixels[i + 1] = g_new as u8;
+                new_pixels[i + 2] = b_new as u8;
+            }
+        }
+
+        self.image = PhotonImage::new(new_pixels, self.width, self.height);
+    }
+
+    /// 阴影提亮
+    /// amount: 提亮强度，-100 到 100，负值压暗阴影，正值提亮阴影
+    pub fn adjust_shadows(&mut self, amount: f32) {
+        let pixels = self.image.get_raw_pixels();
+        let mut new_pixels = pixels.clone();
+
+        let adjustment = amount / 100.0;
+
+        for i in (0..new_pixels.len()).step_by(4) {
+            let r = new_pixels[i] as f32;
+            let g = new_pixels[i + 1] as f32;
+            let b = new_pixels[i + 2] as f32;
+
+            // 计算亮度
+            let luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
+
+            // 阴影区域：亮度 < 0.5
+            if luminance < 0.5 {
+                // 根据亮度计算调整系数，阴影部分调整更大
+                let shadow_factor = (0.5 - luminance) * 2.0; // 0.0 to 1.0
+                let factor = 1.0 + (adjustment * shadow_factor);
+
+                let r_new = (r * factor).clamp(0.0, 255.0);
+                let g_new = (g * factor).clamp(0.0, 255.0);
+                let b_new = (b * factor).clamp(0.0, 255.0);
+
+                new_pixels[i] = r_new as u8;
+                new_pixels[i + 1] = g_new as u8;
+                new_pixels[i + 2] = b_new as u8;
+            }
+        }
+
+        self.image = PhotonImage::new(new_pixels, self.width, self.height);
+    }
+
+    /// 暗角效果
+    /// intensity: 暗角强度，0.0 到 1.0
+    /// radius: 暗角范围，0.0 到 1.0，1.0 表示覆盖整个图像
+    pub fn apply_vignette(&mut self, intensity: f32, radius: f32) {
+        let pixels = self.image.get_raw_pixels();
+        let mut new_pixels = pixels.clone();
+
+        let intensity = intensity.clamp(0.0, 1.0);
+        let radius = radius.clamp(0.0, 1.0);
+
+        let center_x = self.width as f32 / 2.0;
+        let center_y = self.height as f32 / 2.0;
+        let max_dist = (center_x * center_x + center_y * center_y).sqrt();
+
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let idx = ((y * self.width + x) * 4) as usize;
+
+                // 计算到中心的距离
+                let dx = x as f32 - center_x;
+                let dy = y as f32 - center_y;
+                let dist = (dx * dx + dy * dy).sqrt();
+
+                // 归一化距离
+                let normalized_dist = (dist / max_dist) / radius;
+
+                // 计算暗角系数
+                let vignette_factor = if normalized_dist < 1.0 {
+                    1.0 - (intensity * normalized_dist.powi(2))
+                } else {
+                    1.0 - intensity
+                };
+
+                let r = new_pixels[idx] as f32;
+                let g = new_pixels[idx + 1] as f32;
+                let b = new_pixels[idx + 2] as f32;
+
+                new_pixels[idx] = (r * vignette_factor).clamp(0.0, 255.0) as u8;
+                new_pixels[idx + 1] = (g * vignette_factor).clamp(0.0, 255.0) as u8;
+                new_pixels[idx + 2] = (b * vignette_factor).clamp(0.0, 255.0) as u8;
+            }
+        }
+
+        self.image = PhotonImage::new(new_pixels, self.width, self.height);
     }
 }

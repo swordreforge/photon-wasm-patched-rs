@@ -1036,9 +1036,9 @@ pub fn hsl_fast(photon_image: &mut PhotonImage, mode: &str, amt: f32) {
                 (c, 0.0, x)
             };
 
-            pixels[idx] = ((r_new + m) * 255.0) as u8;
-            pixels[idx + 1] = ((g_new + m) * 255.0) as u8;
-            pixels[idx + 2] = ((b_new + m) * 255.0) as u8;
+            pixels[idx] = ((r_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+            pixels[idx + 1] = ((g_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+            pixels[idx + 2] = ((b_new + m) * 255.0).clamp(0.0, 255.0) as u8;
         }
     }
 
@@ -1093,9 +1093,9 @@ pub fn hsl_fast(photon_image: &mut PhotonImage, mode: &str, amt: f32) {
             (c, 0.0, x)
         };
 
-        pixels[i] = ((r_new + m) * 255.0) as u8;
-        pixels[i + 1] = ((g_new + m) * 255.0) as u8;
-        pixels[i + 2] = ((b_new + m) * 255.0) as u8;
+        pixels[i] = ((r_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+        pixels[i + 1] = ((g_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+        pixels[i + 2] = ((b_new + m) * 255.0).clamp(0.0, 255.0) as u8;
     }
 }
 
@@ -1171,9 +1171,9 @@ pub fn hsv_fast(photon_image: &mut PhotonImage, mode: &str, amt: f32) {
                 (c, 0.0, x)
             };
 
-            pixels[idx] = ((r_new + m) * 255.0) as u8;
-            pixels[idx + 1] = ((g_new + m) * 255.0) as u8;
-            pixels[idx + 2] = ((b_new + m) * 255.0) as u8;
+            pixels[idx] = ((r_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+            pixels[idx + 1] = ((g_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+            pixels[idx + 2] = ((b_new + m) * 255.0).clamp(0.0, 255.0) as u8;
         }
     }
 
@@ -1227,9 +1227,9 @@ pub fn hsv_fast(photon_image: &mut PhotonImage, mode: &str, amt: f32) {
             (c, 0.0, x)
         };
 
-        pixels[i] = ((r_new + m) * 255.0) as u8;
-        pixels[i + 1] = ((g_new + m) * 255.0) as u8;
-        pixels[i + 2] = ((b_new + m) * 255.0) as u8;
+        pixels[i] = ((r_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+        pixels[i + 1] = ((g_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+        pixels[i + 2] = ((b_new + m) * 255.0).clamp(0.0, 255.0) as u8;
     }
 }
 
@@ -1376,9 +1376,9 @@ pub fn hsl_simd(photon_image: &mut PhotonImage, mode: &str, amt: f32) {
                 (c, 0.0, x)
             };
 
-            pixels[idx] = ((r_new + m) * 255.0) as u8;
-            pixels[idx + 1] = ((g_new + m) * 255.0) as u8;
-            pixels[idx + 2] = ((b_new + m) * 255.0) as u8;
+            pixels[idx] = ((r_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+            pixels[idx + 1] = ((g_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+            pixels[idx + 2] = ((b_new + m) * 255.0).clamp(0.0, 255.0) as u8;
         }
     }
 
@@ -1438,9 +1438,9 @@ pub fn hsl_simd(photon_image: &mut PhotonImage, mode: &str, amt: f32) {
             (c, 0.0, x)
         };
 
-        pixels[i] = ((r_new + m) * 255.0) as u8;
-        pixels[i + 1] = ((g_new + m) * 255.0) as u8;
-        pixels[i + 2] = ((b_new + m) * 255.0) as u8;
+        pixels[i] = ((r_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+        pixels[i + 1] = ((g_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+        pixels[i + 2] = ((b_new + m) * 255.0).clamp(0.0, 255.0) as u8;
     }
 }
 
@@ -1523,9 +1523,9 @@ pub fn hsv_simd(photon_image: &mut PhotonImage, mode: &str, amt: f32) {
                 (c, 0.0, x)
             };
 
-            pixels[idx] = ((r_new + m) * 255.0) as u8;
-            pixels[idx + 1] = ((g_new + m) * 255.0) as u8;
-            pixels[idx + 2] = ((b_new + m) * 255.0) as u8;
+            pixels[idx] = ((r_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+            pixels[idx + 1] = ((g_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+            pixels[idx + 2] = ((b_new + m) * 255.0).clamp(0.0, 255.0) as u8;
         }
     }
 
@@ -1584,9 +1584,9 @@ pub fn hsv_simd(photon_image: &mut PhotonImage, mode: &str, amt: f32) {
             (c, 0.0, x)
         };
 
-        pixels[i] = ((r_new + m) * 255.0) as u8;
-        pixels[i + 1] = ((g_new + m) * 255.0) as u8;
-        pixels[i + 2] = ((b_new + m) * 255.0) as u8;
+        pixels[i] = ((r_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+        pixels[i + 1] = ((g_new + m) * 255.0).clamp(0.0, 255.0) as u8;
+        pixels[i + 2] = ((b_new + m) * 255.0).clamp(0.0, 255.0) as u8;
     }
 }
 
@@ -1620,18 +1620,18 @@ pub fn mix_with_colour_simd(photon_image: &mut PhotonImage, mix_colour: Rgb, opa
         for p in 0..16 {
             let idx = base_idx + p * 4;
 
-            pixels[idx] = (mix_red_offset + pixels[idx] as f32 * factor) as u8;
-            pixels[idx + 1] = (mix_green_offset + pixels[idx + 1] as f32 * factor) as u8;
-            pixels[idx + 2] = (mix_blue_offset + pixels[idx + 2] as f32 * factor) as u8;
+            pixels[idx] = (mix_red_offset + pixels[idx] as f32 * factor).clamp(0.0, 255.0) as u8;
+            pixels[idx + 1] = (mix_green_offset + pixels[idx + 1] as f32 * factor).clamp(0.0, 255.0) as u8;
+            pixels[idx + 2] = (mix_blue_offset + pixels[idx + 2] as f32 * factor).clamp(0.0, 255.0) as u8;
         }
     }
 
     // Process remaining pixels
     let start_remainder = num_batches * batch_size;
     for i in (start_remainder..len).step_by(4) {
-        pixels[i] = (mix_red_offset + pixels[i] as f32 * factor) as u8;
-        pixels[i + 1] = (mix_green_offset + pixels[i + 1] as f32 * factor) as u8;
-        pixels[i + 2] = (mix_blue_offset + pixels[i + 2] as f32 * factor) as u8;
+        pixels[i] = (mix_red_offset + pixels[i] as f32 * factor).clamp(0.0, 255.0) as u8;
+        pixels[i + 1] = (mix_green_offset + pixels[i + 1] as f32 * factor).clamp(0.0, 255.0) as u8;
+        pixels[i + 2] = (mix_blue_offset + pixels[i + 2] as f32 * factor).clamp(0.0, 255.0) as u8;
     }
 }
 

@@ -1024,7 +1024,7 @@ impl LayerStack {
             next_id: 1,
             canvas_width: width,
             canvas_height: height,
-            background_color: [255, 255, 255, 255], // 默认白色背景
+            background_color: [255, 255, 255, 0], // 默认透明背景
             dirty_rects: Vec::new(),
             cached_composite: None,
             incremental_enabled: true, // 默认启用增量渲染
@@ -1555,15 +1555,44 @@ impl LayerStack {
         // 标记受影响的区域为脏区域
         self.mark_layer_dirty(index - 1);
 
-        // 先克隆上层的信息
+        // 获取上下两个图层
         let upper_blend_mode = self.layers[index].blend_mode;
         let upper_opacity = self.layers[index].opacity;
-        let upper_image = self.layers[index].image.clone();
+        let upper_layer = &self.layers[index];
 
+        let lower_layer = self.layers[index - 1].clone();
+
+        // 应用上层图层的变换（如果有）
+        let upper_image = if has_transform(upper_layer) {
+            apply_layer_transform(upper_layer, self.canvas_width, self.canvas_height)
+        } else {
+            upper_layer.image.clone()
+        };
+
+        // 应用下层图层的变换（如果有）
+        let lower_image = if has_transform(&lower_layer) {
+            apply_layer_transform(&lower_layer, self.canvas_width, self.canvas_height)
+        } else {
+            lower_layer.image.clone()
+        };
+
+        // 获取下层图层的可变引用
         let lower = self.layers.get_mut(index - 1).unwrap();
 
-        // 合并图像：将 upper 混合到 lower 上
+        // 将上层混合到下层上
         blend_layers(&mut lower.image, &upper_image, upper_blend_mode, upper_opacity);
+
+        // 替换下层图层的图像为变换后的图像
+        lower.image = lower_image;
+
+        // 重置下层图层的变换为默认值（因为变换已经应用到像素中了）
+        lower.position_x = 0.0;
+        lower.position_y = 0.0;
+        lower.scale_x = 1.0;
+        lower.scale_y = 1.0;
+        lower.rotation_degrees = 0.0;
+        lower.flip_horizontal = false;
+        lower.flip_vertical = false;
 
         // 删除上层
         self.layers.remove(index);
@@ -1580,26 +1609,35 @@ impl LayerStack {
         // 标记整个画布为脏区域
         self.mark_dirty_full();
 
-        let bottom_index = 0;
+        // 使用 render_composite 获取所有图层（包含变换）的渲染结果
+        let composited = self.render_composite();
 
-        // 从上到下依次合并到底层
-        while self.layers.len() > 1 {
-            let top_index = self.layers.len() - 1;
+        // 清空所有图层
+        self.layers.clear();
 
-            // 先克隆顶层的信息
-            let top_visible = self.layers[top_index].visible;
-            let top_blend_mode = self.layers[top_index].blend_mode;
-            let top_opacity = self.layers[top_index].opacity;
-            let top_image = self.layers[top_index].image.clone();
+        // 创建一个新的图层，使用合成结果
+        let mut new_layer = Layer::new(0, String::from("Flattened Layer"), self.canvas_width, self.canvas_height);
+        new_layer.image = composited;
+        new_layer.visible = true;
+        new_layer.opacity = 255;
+        new_layer.blend_mode = BlendMode::Normal;
 
-            let bottom = self.layers.get_mut(bottom_index).unwrap();
+        // 重置变换为默认值（因为变换已经应用到像素中了）
+        new_layer.position_x = 0.0;
+        new_layer.position_y = 0.0;
+        new_layer.scale_x = 1.0;
+        new_layer.scale_y = 1.0;
+        new_layer.rotation_degrees = 0.0;
+        new_layer.flip_horizontal = false;
+        new_layer.flip_vertical = false;
 
-            if top_visible {
-                blend_layers(&mut bottom.image, &top_image, top_blend_mode, top_opacity);
-            }
+        self.layers.push(new_layer);
 
-            self.layers.remove(top_index);
-        }
+        // 标记整个画布为脏区域，强制下次渲染时重新计算
+        self.mark_dirty_full();
+
+        // 强制清除缓存，确保不会使用旧的缓存
+        self.cached_composite = None;
 
         true
     }
@@ -2337,11 +2375,13 @@ fn hsl_to_rgb(h: f32, s: f32, l: f32) -> (f32, f32, f32) {
 }
 
 /// 应用不透明度到图层
+/// 标准实现：只修改 Alpha 通道，让图层变得透明，显示下层
 fn apply_opacity(image: &mut PhotonImage, opacity: u8) {
     let opacity_f = opacity as f32 / 255.0;
     let mut pixels = image.get_raw_pixels();
 
     for i in (0..pixels.len()).step_by(4) {
+        // 只修改 Alpha 通道，保持 RGB 不变
         pixels[i + 3] = (pixels[i + 3] as f32 * opacity_f) as u8;
     }
 

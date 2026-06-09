@@ -181,8 +181,40 @@ export class ImageProcessor {
      * 添加点到当前笔划
      */
     add_stroke_point(x: number, y: number, pressure: number): void;
+    /**
+     * 高光压制
+     *
+     * # 参数
+     * * `amount` - 压制强度，-100 到 100，负值压暗高光，正值提亮高光
+     */
+    adjust_highlights(amount: number): void;
+    /**
+     * 色阶调节
+     *
+     * # 参数
+     * * `input_black` - 输入黑点 (0-255)
+     * * `input_white` - 输入白点 (0-255)
+     * * `input_gray` - 输入灰点 (0-255)
+     * * `output_black` - 输出黑点 (0-255)
+     * * `output_white` - 输出白点 (0-255)
+     */
+    adjust_levels(input_black: number, input_white: number, input_gray: number, output_black: number, output_white: number): void;
     adjust_lightness(level: number): void;
     adjust_saturation(level: number): void;
+    /**
+     * 阴影提亮
+     *
+     * # 参数
+     * * `amount` - 提亮强度，-100 到 100，负值压暗阴影，正值提亮阴影
+     */
+    adjust_shadows(amount: number): void;
+    /**
+     * 色温调节
+     *
+     * # 参数
+     * * `value` - 色温值，-100 到 100，负值为冷色，正值为暖色
+     */
+    adjust_temperature(value: number): void;
     alter_blue_channel(amt: number): void;
     alter_green_channel(amt: number): void;
     alter_red_channel(amt: number): void;
@@ -233,6 +265,15 @@ export class ImageProcessor {
     apply_preset_filter(filter_name: string): void;
     apply_prewitt_horizontal(): void;
     apply_primary(): void;
+    /**
+     * RGB 曲线调节
+     *
+     * # 参数
+     * * `r_curve` - 红色曲线控制点数组，格式为 [输入值, 输出值, ...] (0-255)
+     * * `g_curve` - 绿色曲线控制点数组，格式为 [输入值, 输出值, ...] (0-255)
+     * * `b_curve` - 蓝色曲线控制点数组，格式为 [输入值, 输出值, ...] (0-255)
+     */
+    apply_rgb_curve(r_curve: Uint8Array, g_curve: Uint8Array, b_curve: Uint8Array): void;
     apply_ryo(): void;
     apply_saturation(level: number): void;
     apply_sepia(): void;
@@ -244,6 +285,14 @@ export class ImageProcessor {
     apply_strips(num_strips: number, horizontal: boolean, color_r?: number | null, color_g?: number | null, color_b?: number | null): void;
     apply_threshold(threshold: number): void;
     apply_tint(r: number, g: number, b: number): void;
+    /**
+     * 暗角效果
+     *
+     * # 参数
+     * * `intensity` - 暗角强度，0.0 到 1.0
+     * * `radius` - 暗角范围，0.0 到 1.0，1.0 表示覆盖整个图像
+     */
+    apply_vignette(intensity: number, radius: number): void;
     apply_watermark(watermark_bytes: Uint8Array, x: bigint, y: bigint, scale?: number | null, opacity?: number | null, rotation?: number | null): void;
     apply_watermark_with_blend(watermark_bytes: Uint8Array, x: bigint, y: bigint, scale: number, blend_mode: string): void;
     auto_crop_by_color(target_r: number, target_g: number, target_b: number, tolerance: number, feather_radius: number): void;
@@ -4961,8 +5010,12 @@ export interface InitOutput {
     readonly create_circular_mask: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => void;
     readonly create_polygon_mask: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
     readonly imageprocessor_add_stroke_point: (a: number, b: number, c: number, d: number) => void;
+    readonly imageprocessor_adjust_highlights: (a: number, b: number) => void;
+    readonly imageprocessor_adjust_levels: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
     readonly imageprocessor_adjust_lightness: (a: number, b: number) => void;
     readonly imageprocessor_adjust_saturation: (a: number, b: number) => void;
+    readonly imageprocessor_adjust_shadows: (a: number, b: number) => void;
+    readonly imageprocessor_adjust_temperature: (a: number, b: number) => void;
     readonly imageprocessor_alter_blue_channel: (a: number, b: number) => void;
     readonly imageprocessor_alter_green_channel: (a: number, b: number) => void;
     readonly imageprocessor_alter_red_channel: (a: number, b: number) => void;
@@ -5012,6 +5065,7 @@ export interface InitOutput {
     readonly imageprocessor_apply_polygon_mask: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
     readonly imageprocessor_apply_preset_filter: (a: number, b: number, c: number) => void;
     readonly imageprocessor_apply_primary: (a: number) => void;
+    readonly imageprocessor_apply_rgb_curve: (a: number, b: number, c: number, d: number) => void;
     readonly imageprocessor_apply_ryo: (a: number) => void;
     readonly imageprocessor_apply_saturation: (a: number, b: number) => void;
     readonly imageprocessor_apply_sepia: (a: number) => void;
@@ -5022,6 +5076,7 @@ export interface InitOutput {
     readonly imageprocessor_apply_strips: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
     readonly imageprocessor_apply_threshold: (a: number, b: number) => void;
     readonly imageprocessor_apply_tint: (a: number, b: number, c: number, d: number) => void;
+    readonly imageprocessor_apply_vignette: (a: number, b: number, c: number) => void;
     readonly imageprocessor_apply_watermark: (a: number, b: number, c: number, d: bigint, e: bigint, f: number, g: number, h: number) => void;
     readonly imageprocessor_apply_watermark_with_blend: (a: number, b: number, c: number, d: bigint, e: bigint, f: number, g: number, h: number) => void;
     readonly imageprocessor_auto_crop_by_color: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
@@ -5449,12 +5504,12 @@ export interface InitOutput {
     readonly wbg_rayon_poolbuilder_numThreads: (a: number) => number;
     readonly wbg_rayon_poolbuilder_receiver: (a: number) => number;
     readonly wbg_rayon_start_worker: (a: number) => void;
-    readonly __wasm_bindgen_func_elem_1102: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_1882: (a: number, b: number) => void;
-    readonly __wasm_bindgen_func_elem_1885: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_2510: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1103: (a: number, b: number, c: number) => void;
-    readonly __wasm_bindgen_func_elem_1883: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1126: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_1907: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_1910: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_2535: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1127: (a: number, b: number, c: number) => void;
+    readonly __wasm_bindgen_func_elem_1908: (a: number, b: number, c: number) => void;
     readonly memory: WebAssembly.Memory;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
